@@ -1,0 +1,8 @@
+version: "1.0"
+salt_version: "3006"
+type: grains
+grains:
+  - name: os
+    description: "Operating system name"
+    type: string
+    values: [Ubuntu, Debian, Fedora]

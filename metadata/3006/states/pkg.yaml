@@ -1,0 +1,21 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: pkg
+  description: "Package management states."
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.pkg.html"
+  functions:
+    - name: installed
+      description: "Ensure that a package is installed."
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Package name to install."
+          default_value: ~
+      examples:
+        - |
+          install_vim:
+            pkg.installed:
+              - name: vim

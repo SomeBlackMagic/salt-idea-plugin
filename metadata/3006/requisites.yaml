@@ -1,0 +1,12 @@
+version: "1.0"
+salt_version: "3006"
+type: requisites
+requisites:
+  - name: require
+    description: "Require another state."
+    syntax: "- require:\n  - pkg: vim"
+    examples:
+      - |
+        install_htop:
+          pkg.installed:
+            - name: htop

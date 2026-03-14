@@ -1,0 +1,9 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://someblackmagic.github.io/salt-idea-plugin/schemas/metadata/metadata-document.schema.yaml"
+title: "Salt Metadata Document (Any Supported YAML)"
+oneOf:
+  - $ref: "metadata-index.schema.yaml"
+  - $ref: "metadata-state-module.schema.yaml"
+  - $ref: "metadata-grains.schema.yaml"
+  - $ref: "metadata-execution-module.schema.yaml"
+  - $ref: "metadata-requisites.schema.yaml"

@@ -1,0 +1,43 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://someblackmagic.github.io/salt-idea-plugin/schemas/metadata/metadata-index.schema.yaml"
+title: "Salt Metadata Index"
+type: object
+additionalProperties: false
+required: ["version", "salt_version", "generated_at", "sources"]
+properties:
+  version:
+    $ref: "metadata-common.schema.yaml#/$defs/metadataVersion"
+  salt_version:
+    $ref: "metadata-common.schema.yaml#/$defs/saltVersion"
+  generated_at:
+    type: string
+    format: date-time
+  sources:
+    type: object
+    additionalProperties: false
+    required: ["states", "grains", "execution", "requisites"]
+    properties:
+      states:
+        $ref: "#/$defs/indexEntries"
+      grains:
+        $ref: "#/$defs/indexEntries"
+      execution:
+        $ref: "#/$defs/indexEntries"
+      requisites:
+        type: string
+        minLength: 1
+$defs:
+  indexEntry:
+    type: object
+    additionalProperties: false
+    required: ["path"]
+    properties:
+      path:
+        type: string
+        minLength: 1
+      checksum:
+        type: string
+  indexEntries:
+    type: array
+    items:
+      $ref: "#/$defs/indexEntry"

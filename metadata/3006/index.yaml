@@ -1,0 +1,14 @@
+version: "1.0"
+salt_version: "3006"
+generated_at: "2026-01-01T00:00:00Z"
+sources:
+  states:
+    - path: "states/pkg.yaml"
+      checksum: "sha256:bundled-pkg"
+  grains:
+    - path: "grains/core.yaml"
+      checksum: "sha256:bundled-grains"
+  execution:
+    - path: "execution/cmd.yaml"
+      checksum: "sha256:bundled-cmd"
+  requisites: "requisites.yaml"

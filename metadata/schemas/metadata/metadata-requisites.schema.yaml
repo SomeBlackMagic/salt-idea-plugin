@@ -1,0 +1,31 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://someblackmagic.github.io/salt-idea-plugin/schemas/metadata/metadata-requisites.schema.yaml"
+title: "Salt Requisites Metadata"
+type: object
+additionalProperties: false
+required: ["version", "salt_version", "type", "requisites"]
+properties:
+  version:
+    $ref: "metadata-common.schema.yaml#/$defs/metadataVersion"
+  salt_version:
+    $ref: "metadata-common.schema.yaml#/$defs/saltVersion"
+  type:
+    const: "requisites"
+  requisites:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: ["name"]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        syntax:
+          type: string
+        examples:
+          type: array
+          items:
+            type: string

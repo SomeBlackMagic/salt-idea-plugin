@@ -1,0 +1,15 @@
+version: "1.0"
+salt_version: "3006"
+type: execution_module
+module:
+  name: cmd
+  description: "Command execution module."
+  doc_url: "https://docs.saltproject.io/en/latest/ref/modules/all/salt.modules.cmdmod.html"
+  functions:
+    - name: run
+      description: "Run a shell command."
+      parameters:
+        - name: cmd
+          type: string
+          required: true
+          description: "Command to execute."

@@ -1,0 +1,29 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://someblackmagic.github.io/salt-idea-plugin/schemas/metadata/metadata-state-module.schema.yaml"
+title: "Salt State Module Metadata"
+type: object
+additionalProperties: false
+required: ["version", "salt_version", "type", "module"]
+properties:
+  version:
+    $ref: "metadata-common.schema.yaml#/$defs/metadataVersion"
+  salt_version:
+    $ref: "metadata-common.schema.yaml#/$defs/saltVersion"
+  type:
+    const: "state_module"
+  module:
+    type: object
+    additionalProperties: false
+    required: ["name", "functions"]
+    properties:
+      name:
+        type: string
+        minLength: 1
+      description:
+        type: string
+      doc_url:
+        $ref: "metadata-common.schema.yaml#/$defs/moduleDocUrl"
+      functions:
+        type: array
+        items:
+          $ref: "metadata-common.schema.yaml#/$defs/stateFunction"

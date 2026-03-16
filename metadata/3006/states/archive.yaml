@@ -1,0 +1,89 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: archive
+  description: >-
+    Archive extraction and management states. Allows downloading and
+    extracting archives (tar, zip, etc.) onto minions. Commonly used
+    with the onchanges requisite to extract an archive only when the
+    source file changes.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.archive.html"
+  functions:
+
+    - name: extracted
+      description: >-
+        Ensure that an archive is extracted to a target directory.
+        If the archive has not been extracted yet, or the source has
+        changed, Salt will (re-)extract it. A common pattern is to
+        use onchanges so that extraction only happens when the source
+        archive file state reports changes.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            Absolute path of the directory into which the archive
+            should be extracted.
+          default_value: ~
+        - name: source
+          type: string
+          required: true
+          description: >-
+            URI of the archive to extract. Supports salt:// (file server),
+            http://, https://, and ftp:// URIs, as well as local paths.
+          default_value: ~
+        - name: source_hash
+          type: string
+          required: false
+          description: >-
+            Hash string or URI of a hash file to verify the downloaded
+            archive (e.g. "sha256=abc123...").
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "User owner to set on extracted files."
+          default_value: ~
+        - name: group
+          type: string
+          required: false
+          description: "Group owner to set on extracted files."
+          default_value: ~
+        - name: if_missing
+          type: string
+          required: false
+          description: >-
+            If this path already exists on the minion, skip extraction.
+            Used to avoid re-extracting on every state run.
+          default_value: ~
+        - name: clean
+          type: bool
+          required: false
+          description: >-
+            If True, remove any files in the target directory that are
+            not present in the archive before extracting.
+          default_value: "false"
+        - name: overwrite
+          type: bool
+          required: false
+          description: >-
+            If True, re-extract even if the files are already present.
+          default_value: "false"
+      examples:
+        - |
+          # Match by ID declaration
+          Extract server package:
+            archive.extracted:
+              - name: /usr/local/share/
+              - source: salt://myapp/myapp.tar.xz
+              - onchanges:
+                - file: Deploy server package
+        - |
+          # Match by name parameter
+          Extract server package:
+            archive.extracted:
+              - name: /usr/local/share/
+              - source: salt://myapp/myapp.tar.xz
+              - onchanges:
+                - file: /usr/local/share/myapp.tar.xz

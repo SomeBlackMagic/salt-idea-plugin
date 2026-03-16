@@ -1,0 +1,136 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: host
+  description: >-
+    Management of addresses and names in the /etc/hosts file. Allows
+    adding, updating, and removing host entries. Note: changing the
+    'names' parameter in host.present does not remove the old entry —
+    use host.absent explicitly to remove outdated entries.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.host.html"
+  functions:
+
+    - name: present
+      description: >-
+        Ensure the named host is present with the given IP address(es).
+        Supports a single IP or a list of IPs, and multiple hostnames
+        via the names parameter. Can include a comment. The clean option
+        removes any entries that do not match the configured ip list.
+        Added comment parameter in version 3001, clean parameter in 2018.3.4.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The hostname to assign an IP to."
+          default_value: ~
+        - name: ip
+          type: string
+          required: true
+          description: >-
+            The IP address(es) to apply to the host. Can be a single IP
+            string or a list of IP addresses.
+          default_value: ~
+        - name: names
+          type: list
+          required: false
+          description: >-
+            List of additional hostnames to map to the same IP. Do not
+            use space-separated values in a single name string.
+          default_value: ~
+        - name: comment
+          type: string
+          required: false
+          description: >-
+            A comment to include for the host entry. Added in version 3001.
+          default_value: ~
+        - name: clean
+          type: bool
+          required: false
+          description: >-
+            If True, remove any entries that do not match those configured
+            in the ip option. Added in version 2018.3.4.
+          default_value: "false"
+      examples:
+        - |
+          salt-master:
+            host.present:
+              - ip: 192.168.0.42
+        - |
+          server1:
+            host.present:
+              - ip: 192.168.0.42
+              - names:
+                - server1
+                - florida
+        - |
+          server1:
+            host.present:
+              - ip:
+                - 192.168.0.42
+                - 192.168.0.43
+                - 192.168.0.44
+              - names:
+                - server1
+        - |
+          server1:
+            host.present:
+              - ip: 192.168.0.42
+              - names:
+                - server1
+                - florida
+              - comment: A very important comment
+
+    - name: absent
+      description: >-
+        Ensure the named host entry is absent from /etc/hosts.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The hostname to remove."
+          default_value: ~
+        - name: ip
+          type: string
+          required: true
+          description: "The IP address(es) of the host to remove."
+          default_value: ~
+      examples:
+        - |
+          old-server:
+            host.absent:
+              - ip: 192.168.0.99
+
+    - name: only
+      description: >-
+        Ensure that only the given hostnames are associated with the
+        given IP address. Any other hostnames associated with the IP
+        are removed. If no hostnames are specified (empty list), all
+        hostnames associated with the IP are removed. Added in version
+        2016.3.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The IP address to manage hostname associations for."
+          default_value: ~
+        - name: hostnames
+          type: list
+          required: true
+          description: >-
+            A single hostname or list of hostnames to associate with the
+            IP. Any other existing associations are removed. Pass an
+            empty list to remove all associations.
+          default_value: ~
+      examples:
+        - |
+          127.0.1.1:
+            host.only:
+              - hostnames:
+                - foo.example.com
+                - foo
+        - |
+          # Remove all hostnames for an address
+          203.0.113.25:
+            host.only:
+              - hostnames: []

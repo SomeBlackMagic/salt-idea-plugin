@@ -1,0 +1,37 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: process
+  description: >-
+    Process management states. Allows ensuring that processes matching
+    a given pattern are absent (killed).
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.process.html"
+  functions:
+
+    - name: absent
+      description: >-
+        Ensure the named command is not running. If a process matching
+        the pattern is found, it is killed. Optionally restrict to a
+        specific user or send a custom signal.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The pattern to match against running process names."
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "The user to which the process belongs. Limits matching to that user."
+          default_value: ~
+        - name: signal
+          type: string
+          required: false
+          description: "Signal to send to the matching process(es) (e.g. 'SIGTERM', 'SIGKILL')."
+          default_value: ~
+      examples:
+        - |
+          httpd-absent:
+            process.absent:
+              - name: apache2

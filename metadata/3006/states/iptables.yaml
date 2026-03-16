@@ -1,0 +1,380 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: iptables
+  description: >-
+    Management of iptables Linux firewall rules. This is an
+    iptables-specific module designed to manage Linux firewalls. Note:
+    'name' is reserved for the Salt state name — to pass '--name EXAMPLE'
+    to iptables, use '- name_: EXAMPLE'. '--state' is specified as
+    'connstate' (not to be confused with 'ctstate'). All other iptables
+    long options are passed as-is. Jump options that take no arguments
+    should be passed with an empty string. Requires iptables to support
+    '--check'; if not available, iptables-save output is used instead.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.iptables.html"
+  functions:
+
+    - name: append
+      description: >-
+        Add a rule to the end of the specified chain. If the rule is
+        already present anywhere in the chain, its position is not
+        changed. Added in version 0.17.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            A user-defined name for this rule in the state/formula.
+            This should not be an actual iptables rule.
+          default_value: ~
+        - name: table
+          type: string
+          required: false
+          description: "The table that owns the chain (e.g. 'filter', 'nat', 'mangle')."
+          default_value: "filter"
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+        - name: chain
+          type: string
+          required: false
+          description: "The chain to append the rule to (e.g. 'INPUT', 'OUTPUT', 'FORWARD')."
+          default_value: ~
+        - name: jump
+          type: string
+          required: false
+          description: "The jump target (e.g. 'ACCEPT', 'DROP', 'REJECT', 'LOG')."
+          default_value: ~
+        - name: protocol
+          type: string
+          required: false
+          description: "Protocol to match (e.g. 'tcp', 'udp', 'icmp')."
+          default_value: ~
+        - name: match
+          type: string
+          required: false
+          description: >-
+            Match extension(s) to use (e.g. 'state', 'comment'). Can be
+            a single string or a list.
+          default_value: ~
+        - name: connstate
+          type: string
+          required: false
+          description: >-
+            Connection state to match. Used instead of '--state' to avoid
+            confusion with Salt's 'state' concept. Values: 'NEW',
+            'ESTABLISHED', 'RELATED', 'INVALID'.
+          default_value: ~
+        - name: dport
+          type: string
+          required: false
+          description: "Destination port or port range (e.g. '80', '1025:65535')."
+          default_value: ~
+        - name: dports
+          type: list
+          required: false
+          description: "List of destination ports (uses multiport match extension)."
+          default_value: ~
+        - name: sport
+          type: string
+          required: false
+          description: "Source port or port range."
+          default_value: ~
+        - name: source
+          type: string
+          required: false
+          description: >-
+            Source address or network. Prefix with '!' or 'not ' to
+            invert the match (e.g. '! 127.0.0.1', 'not 127.0.0.1').
+          default_value: ~
+        - name: destination
+          type: string
+          required: false
+          description: "Destination address or network."
+          default_value: ~
+        - name: comment
+          type: string
+          required: false
+          description: "Comment string for the rule (requires comment match extension)."
+          default_value: ~
+        - name: save
+          type: bool
+          required: false
+          description: >-
+            If True, save the rules to the OS-dependent persistence file
+            (loaded at system startup). If a string, save to that filename.
+          default_value: "false"
+      examples:
+        - |
+          httpd:
+            iptables.append:
+              - table: filter
+              - chain: INPUT
+              - jump: ACCEPT
+              - match: state
+              - connstate: NEW
+              - dport: 80
+              - protocol: tcp
+              - sport: 1025:65535
+              - save: True
+        - |
+          httpd:
+            iptables.append:
+              - table: filter
+              - chain: INPUT
+              - jump: ACCEPT
+              - match:
+                  - state
+                  - comment
+              - comment: "Allow HTTP"
+              - connstate: NEW
+              - dport: 80
+              - protocol: tcp
+              - sport: 1025:65535
+              - save: True
+        - |
+          httpd:
+            iptables.append:
+              - table: filter
+              - family: ipv4
+              - chain: INPUT
+              - jump: ACCEPT
+              - match: state
+              - connstate: NEW
+              - dports:
+                  - 80
+                  - 443
+              - protocol: tcp
+              - sport: 1025:65535
+              - save: True
+        - |
+          accept_esp_in:
+            iptables.append:
+              - table: filter
+              - chain: INPUT
+              - jump: ACCEPT
+              - source: 10.20.0.0/24
+              - destination: 10.10.0.0/24
+              - in-interface: eth0
+              - match: policy
+              - dir: in
+              - pol: ipsec
+              - reqid: 1
+              - proto: esp
+
+    - name: insert
+      description: >-
+        Insert a rule into a chain at a specified position. If the rule
+        is already present anywhere in the chain, its position is not
+        changed. Added in version 2014.1.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A user-defined name for this rule."
+          default_value: ~
+        - name: table
+          type: string
+          required: false
+          description: "The table that owns the chain."
+          default_value: "filter"
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+        - name: position
+          type: int
+          required: false
+          description: >-
+            The position at which to insert the rule. Note that -1 is
+            not a supported value.
+          default_value: ~
+        - name: save
+          type: bool
+          required: false
+          description: "If True, save the rules to the persistence file."
+          default_value: "false"
+      examples:
+        - |
+          httpd:
+            iptables.insert:
+              - position: 1
+              - table: filter
+              - chain: INPUT
+              - jump: ACCEPT
+              - match: state
+              - connstate: NEW
+              - dport: 80
+              - protocol: tcp
+              - sport: 1025:65535
+              - save: True
+
+    - name: delete
+      description: >-
+        Delete a rule from a chain if present. If the rule is already
+        absent, this is not an error. Can delete by rule spec or by
+        position. Added in version 2014.1.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A user-defined name for this rule."
+          default_value: ~
+        - name: table
+          type: string
+          required: false
+          description: "The table that owns the chain."
+          default_value: "filter"
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+        - name: position
+          type: int
+          required: false
+          description: "Position of the rule to delete."
+          default_value: ~
+        - name: save
+          type: bool
+          required: false
+          description: "If True, save the rules to the persistence file."
+          default_value: "false"
+      examples:
+        - |
+          httpd:
+            iptables.delete:
+              - table: filter
+              - chain: INPUT
+              - jump: ACCEPT
+              - match: state
+              - connstate: NEW
+              - dport: 80
+              - protocol: tcp
+              - sport: 1025:65535
+              - save: True
+
+    - name: chain_present
+      description: >-
+        Ensure a chain exists in the specified table. Added in version 2014.1.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A user-defined chain name."
+          default_value: ~
+        - name: table
+          type: string
+          required: false
+          description: "The table to own the chain."
+          default_value: "filter"
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+      examples:
+        - |
+          MYCHAIN:
+            iptables.chain_present:
+              - table: filter
+              - family: ipv4
+
+    - name: chain_absent
+      description: >-
+        Ensure a chain does not exist in the specified table.
+        Added in version 2014.1.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The chain to remove."
+          default_value: ~
+        - name: table
+          type: string
+          required: false
+          description: "The table from which to remove the chain."
+          default_value: "filter"
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+      examples:
+        - |
+          MYCHAIN:
+            iptables.chain_absent:
+              - table: filter
+
+    - name: set_policy
+      description: >-
+        Set the default policy for an iptables chain. Added in version 2014.1.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The chain to set the policy on (e.g. 'INPUT', 'FORWARD', 'OUTPUT')."
+          default_value: ~
+        - name: table
+          type: string
+          required: false
+          description: "The table that owns the chain."
+          default_value: "filter"
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+        - name: policy
+          type: string
+          required: false
+          description: "The policy to set (e.g. 'ACCEPT', 'DROP')."
+          default_value: ~
+        - name: save
+          type: bool
+          required: false
+          description: "If True, save the rules to the persistence file."
+          default_value: "false"
+      examples:
+        - |
+          default to accept:
+            iptables.set_policy:
+              - chain: INPUT
+              - policy: ACCEPT
+
+    - name: flush
+      description: >-
+        Flush all rules from a chain, or all chains in a table if no
+        chain is specified. Added in version 2014.1.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A user-defined name for this flush operation."
+          default_value: ~
+        - name: table
+          type: string
+          required: false
+          description: "The table to flush."
+          default_value: "filter"
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+        - name: chain
+          type: string
+          required: false
+          description: "The specific chain to flush. All chains if not specified."
+          default_value: ~
+      examples:
+        - |
+          flush_input:
+            iptables.flush:
+              - table: filter
+              - chain: INPUT
+              - family: ipv4

@@ -3,13 +3,144 @@ salt_version: "3006"
 type: execution_module
 module:
   name: cmd
-  description: "Command execution module."
+  description: >-
+    Command execution module. Provides functions for running shell commands
+    and scripts on minions. Note: execution modules are different from state
+    modules. To call cmd execution functions as a state, use module.run.
   doc_url: "https://docs.saltproject.io/en/latest/ref/modules/all/salt.modules.cmdmod.html"
   functions:
+
     - name: run
-      description: "Run a shell command."
+      description: >-
+        Execute a shell command and return the output. This is the function
+        called under the hood by the unless and onlyif state requisites via
+        cmd.retcode. When used as a state (cmd.run), the command is provided
+        via the 'name' parameter.
       parameters:
         - name: cmd
           type: string
           required: true
-          description: "Command to execute."
+          description: "The shell command to execute."
+        - name: cwd
+          type: string
+          required: false
+          description: "The directory from which to execute the command."
+          default_value: ~
+        - name: runas
+          type: string
+          required: false
+          description: >-
+            The user to run the command as. Used globally via the runas
+            state argument. Added in version 2017.7.0.
+          default_value: ~
+        - name: runas_password
+          type: string
+          required: false
+          description: >-
+            Password for the runas user. Required on Windows when runas
+            is specified. Added in version 2017.7.2.
+          default_value: ~
+        - name: python_shell
+          type: bool
+          required: false
+          description: >-
+            If True, the command is passed to the shell interpreter.
+            Used internally by unless and onlyif requisites.
+          default_value: "false"
+        - name: umask
+          type: string
+          required: false
+          description: >-
+            Set the umask before running the command. Global state argument
+            available since version 3002. Not available on Windows.
+          default_value: ~
+
+    - name: script
+      description: >-
+        Download and execute a script from a given source. The source can
+        be a salt:// URI, http/https URL, or a local path. Supports the
+        umask global state argument since version 3002.
+      parameters:
+        - name: source
+          type: string
+          required: true
+          description: >-
+            Path or URI of the script to execute. Supports salt:// URIs
+            (e.g. salt://myapp/files/my_script.sh).
+        - name: args
+          type: string
+          required: false
+          description: "Command-line arguments to pass to the script."
+          default_value: ~
+        - name: cwd
+          type: string
+          required: false
+          description: "The directory from which to execute the script."
+          default_value: ~
+        - name: runas
+          type: string
+          required: false
+          description: "The user to run the script as."
+          default_value: ~
+        - name: umask
+          type: string
+          required: false
+          description: >-
+            Set the umask before running the script. Added as a global
+            state argument in version 3002. Not available on Windows.
+          default_value: ~
+
+    - name: retcode
+      description: >-
+        Execute a shell command and return its return code. This is the
+        function called internally by the unless and onlyif state requisites
+        with python_shell=True. The boolean result is determined by the
+        shell's concept of True/False (exit code 0 = True, non-zero = False).
+      parameters:
+        - name: cmd
+          type: string
+          required: true
+          description: "The shell command to execute."
+        - name: cwd
+          type: string
+          required: false
+          description: "The directory from which to execute the command."
+          default_value: ~
+        - name: runas
+          type: string
+          required: false
+          description: "The user to run the command as."
+          default_value: ~
+        - name: python_shell
+          type: bool
+          required: false
+          description: >-
+            If True, the command is passed to the shell interpreter.
+            Defaults to True when called from unless/onlyif requisites.
+          default_value: "false"
+
+    - name: run_all
+      description: >-
+        Execute a shell command and return a dictionary containing the
+        return code, stdout, and stderr. Useful when all output streams
+        and the exit code are needed.
+      parameters:
+        - name: cmd
+          type: string
+          required: true
+          description: "The shell command to execute."
+        - name: cwd
+          type: string
+          required: false
+          description: "The directory from which to execute the command."
+          default_value: ~
+        - name: runas
+          type: string
+          required: false
+          description: "The user to run the command as."
+          default_value: ~
+        - name: python_shell
+          type: bool
+          required: false
+          description: "If True, the command is passed to the shell interpreter."
+          default_value: "false"

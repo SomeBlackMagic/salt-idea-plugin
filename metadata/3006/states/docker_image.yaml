@@ -1,0 +1,73 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: docker_image
+  description: >-
+    Management of Docker images. Allows pulling, building, and removing
+    Docker images on minions. Requires Docker to be installed.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.docker_image.html"
+  functions:
+
+    - name: present
+      description: >-
+        Ensure a Docker image is present on the minion. If the image
+        does not exist locally, it is pulled from the registry. Supports
+        forcing a pull to update to the latest version of a tag.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            Name of the Docker image including tag
+            (e.g. 'nginx:latest', 'myrepo/myapp:1.0').
+          default_value: ~
+        - name: force
+          type: bool
+          required: false
+          description: >-
+            If True, pull the image even if it already exists locally.
+            Used to ensure the local image is up-to-date.
+          default_value: "false"
+        - name: insecure_registry
+          type: bool
+          required: false
+          description: "If True, allow connecting to insecure (HTTP) registries."
+          default_value: "false"
+      examples:
+        - |
+          nginx_image:
+            docker_image.present:
+              - name: nginx:latest
+        - |
+          myapp_image:
+            docker_image.present:
+              - name: myrepo/myapp:1.0
+              - force: True
+
+    - name: absent
+      description: >-
+        Ensure a Docker image does not exist on the minion. If the image
+        is present, it is removed. Fails if the image is in use by a
+        running container unless force is True.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the Docker image to remove (e.g. 'nginx:latest')."
+          default_value: ~
+        - name: force
+          type: bool
+          required: false
+          description: "If True, force removal even if the image is in use."
+          default_value: "false"
+        - name: prune
+          type: bool
+          required: false
+          description: "If True, also remove dangling images after removal."
+          default_value: "false"
+      examples:
+        - |
+          remove_old_image:
+            docker_image.absent:
+              - name: myapp:0.9

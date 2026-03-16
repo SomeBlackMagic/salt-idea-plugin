@@ -1,5 +1,5 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
-$id: "https://someblackmagic.github.io/salt-idea-plugin/schemas/metadata/metadata-state-module.schema.yaml"
+$id: "https://someblackmagic.github.io/saВlt-idea-plugin/schemas/metadata/metadata-state-module.schema.yaml"
 title: "Salt State Module Metadata"
 type: object
 additionalProperties: false

@@ -1,0 +1,57 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: sysctl
+  description: >-
+    Configuration of the kernel using sysctl. Controls the kernel sysctl
+    system, setting values both in memory and persisting them to a
+    configuration file (default: /etc/sysctl.conf).
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.sysctl.html"
+  functions:
+
+    - name: present
+      description: >-
+        Ensure that the named sysctl value is set in memory and persisted
+        to the named configuration file. The default sysctl configuration
+        file is /etc/sysctl.conf. Set the value to the correct expected
+        output for sysctl or the respective /proc/sys file — incorrect
+        values cause Salt to report changes on every run.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            The sysctl key to set (e.g. 'vm.swappiness',
+            'net.ipv4.ip_forward', 'kernel.shmmax').
+          default_value: ~
+        - name: value
+          type: string
+          required: true
+          description: >-
+            The sysctl value to apply. Use the exact format expected
+            by sysctl — for example '1-3' instead of '1,2,3' if that
+            is what the kernel reports.
+          default_value: ~
+        - name: config
+          type: string
+          required: false
+          description: >-
+            The location of the sysctl configuration file. If not
+            specified, the proper location is detected based on platform
+            (default: /etc/sysctl.conf).
+          default_value: ~
+      examples:
+        - |
+          vm.swappiness:
+            sysctl.present:
+              - value: 20
+        - |
+          net.ipv4.ip_forward:
+            sysctl.present:
+              - value: 1
+        - |
+          kernel.shmmax:
+            sysctl.present:
+              - value: 4294967296
+              - config: /etc/sysctl.d/99-salt.conf

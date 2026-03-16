@@ -1,0 +1,190 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: firewalld
+  description: >-
+    Management of firewalld. Added in version 2015.8.0. Allows managing
+    firewalld zones, services, ports, port forwarding, masquerading, ICMP
+    blocking, rich rules, interfaces, and sources. Changes are applied
+    permanently and directly before restart/reload.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.firewalld.html"
+  functions:
+
+    - name: present
+      description: >-
+        Ensure a firewalld zone has specific attributes. Manages ports,
+        services, interfaces, sources, port forwarding, masquerading,
+        ICMP blocking, and rich rules for the zone. Each attribute has
+        a corresponding prune_* option that removes all entries not
+        explicitly listed.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The firewalld zone to manage (e.g. 'public', 'internal')."
+          default_value: ~
+        - name: default
+          type: bool
+          required: false
+          description: "Set this zone as the default zone if True."
+          default_value: ~
+        - name: masquerade
+          type: bool
+          required: false
+          description: "Enable or disable masquerade for the zone."
+          default_value: ~
+        - name: ports
+          type: list
+          required: false
+          description: >-
+            List of ports to add to the zone in 'port/protocol' format
+            (e.g. ['22/tcp', '80/tcp', '443/tcp']).
+          default_value: ~
+        - name: prune_ports
+          type: bool
+          required: false
+          description: "If True, remove all ports not in the ports list."
+          default_value: "false"
+        - name: services
+          type: list
+          required: false
+          description: "List of service names to add to the zone."
+          default_value: ~
+        - name: prune_services
+          type: bool
+          required: false
+          description: "If True, remove all services not in the services list."
+          default_value: "false"
+        - name: interfaces
+          type: list
+          required: false
+          description: "List of network interfaces to bind to the zone."
+          default_value: ~
+        - name: prune_interfaces
+          type: bool
+          required: false
+          description: "If True, remove the zone from all interfaces not listed."
+          default_value: "false"
+        - name: sources
+          type: list
+          required: false
+          description: >-
+            List of source addresses or subnets to add to the zone
+            (e.g. ['192.168.1.0/24', '10.0.0.0/8']).
+          default_value: ~
+        - name: prune_sources
+          type: bool
+          required: false
+          description: "If True, remove all sources not in the sources list."
+          default_value: "false"
+        - name: block_icmp
+          type: list
+          required: false
+          description: "List of ICMP types to block in the zone."
+          default_value: ~
+        - name: prune_block_icmp
+          type: bool
+          required: false
+          description: "If True, remove all ICMP blocks not in the block_icmp list."
+          default_value: "false"
+        - name: port_fwd
+          type: list
+          required: false
+          description: >-
+            List of port forwarding rules in 'srcport:destport:protocol'
+            or 'srcport:destport:protocol:destaddr' format.
+          default_value: ~
+        - name: prune_port_fwd
+          type: bool
+          required: false
+          description: "If True, remove all port forwards not in the port_fwd list."
+          default_value: "false"
+        - name: rich_rules
+          type: list
+          required: false
+          description: >-
+            List of rich rules to add to the zone. The format matches
+            the output of 'firewall-cmd --list-rich-rules'.
+          default_value: ~
+        - name: prune_rich_rules
+          type: bool
+          required: false
+          description: "If True, remove all rich rules not in the rich_rules list."
+          default_value: "false"
+      examples:
+        - |
+          public:
+            firewalld.present:
+              - name: public
+              - block_icmp:
+                - echo-reply
+                - echo-request
+              - default: False
+              - masquerade: True
+              - ports:
+                - 22/tcp
+                - 25/tcp
+        - |
+          my_zone:
+            firewalld.present:
+              - name: public
+              - masquerade: True
+              - port_fwd:
+                - 22:2222:tcp
+                - 80:443:tcp:192.168.0.1
+        - |
+          public:
+            firewalld.present:
+              - name: public
+              - interfaces:
+                - eth0
+              - sources:
+                - 192.168.1.0/24
+        - |
+          saltzone:
+            firewalld.present:
+              - name: saltzone
+              - services:
+                - saltmaster
+              - sources:
+                - 10.0.0.0/8
+        - |
+          saltzone:
+            firewalld.present:
+              - name: saltzone
+              - rich_rules:
+                - rule service name="saltmaster" accept
+              - sources:
+                - 10.0.0.0/8
+
+    - name: service
+      description: >-
+        Ensure the named firewalld service exists and encompasses the
+        specified ports and protocols. Added in version 2016.11.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The name of the firewalld service to manage."
+          default_value: ~
+        - name: ports
+          type: list
+          required: false
+          description: >-
+            List of ports in 'port/protocol' format to include in the
+            service definition.
+          default_value: ~
+        - name: protocols
+          type: list
+          required: false
+          description: "List of protocols to include in the service definition."
+          default_value: ~
+      examples:
+        - |
+          saltmaster:
+            firewalld.service:
+              - name: saltmaster
+              - ports:
+                - 4505/tcp
+                - 4506/tcp

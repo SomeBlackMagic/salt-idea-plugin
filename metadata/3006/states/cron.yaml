@@ -1,0 +1,285 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: cron
+  description: >-
+    Management of cron, the Unix command scheduler. Cron declarations
+    require timing parameters (minute, hour, daymonth, month, dayweek).
+    Any timing argument not specified defaults to "*". The default user
+    for cron states is root — specify user explicitly for other users.
+    It is recommended to use the identifier parameter to avoid duplicate
+    entries when renaming a cron job command.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.cron.html"
+  functions:
+
+    - name: present
+      description: >-
+        Ensure that the specified cron job is present for the specified
+        user. It is recommended to use identifier to uniquely track the
+        cron line across future edits. Without identifier, the state name
+        (command) is used to identify the job — changing the command
+        creates a new job instead of updating the old one. Supports
+        special keywords like '@hourly' or '@reboot' (quotes required
+        to prevent PyYAML from stripping the '@' sign). Timing fields
+        support '*', numeric values, ranges, and the special 'random'
+        keyword (randomises the value across minions, added in 0.16.0).
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The command to be executed by the cron job."
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: >-
+            The user whose crontab should be modified. Defaults to root.
+            Must be specified explicitly for non-root users.
+          default_value: "root"
+        - name: minute
+          type: string
+          required: false
+          description: >-
+            Minute field (0-59, '*', '*/N', or 'random'). Defaults to '*'.
+          default_value: "*"
+        - name: hour
+          type: string
+          required: false
+          description: >-
+            Hour field (0-23, '*', '*/N', or 'random'). Defaults to '*'.
+          default_value: "*"
+        - name: daymonth
+          type: string
+          required: false
+          description: >-
+            Day of month field (1-31, '*', '*/N', or 'random').
+            Defaults to '*'.
+          default_value: "*"
+        - name: month
+          type: string
+          required: false
+          description: >-
+            Month field (1-12, '*', '*/N', or 'random'). Defaults to '*'.
+          default_value: "*"
+        - name: dayweek
+          type: string
+          required: false
+          description: >-
+            Day of week field (0-7, where 0 and 7 are Sunday, '*', '*/N',
+            or 'random'). Defaults to '*'.
+          default_value: "*"
+        - name: identifier
+          type: string
+          required: false
+          description: >-
+            Custom identifier for tracking the cron line across future
+            edits. Recommended to avoid duplicate entries when the command
+            string changes. Added in version 2014.1.2.
+          default_value: ~
+        - name: special
+          type: string
+          required: false
+          description: >-
+            A special keyword for periodicity (e.g. '@reboot', '@hourly',
+            '@daily', '@weekly', '@monthly', '@yearly'). Quotes must be
+            used to prevent PyYAML from stripping the '@' sign.
+            Added in version 2016.3.0.
+          default_value: ~
+        - name: comment
+          type: string
+          required: false
+          description: "Comment to add on the line preceding the cron job."
+          default_value: ~
+        - name: commented
+          type: bool
+          required: false
+          description: >-
+            If True, the cron job is set commented out (prefixed with
+            '#DISABLED#'). Added in version 2016.3.0.
+          default_value: "false"
+      examples:
+        - |
+          date > /tmp/crontest:
+            cron.present:
+              - user: root
+              - minute: 5
+        - |
+          date > /tmp/crontest:
+            cron.present:
+              - identifier: SUPERCRON
+              - user: root
+              - minute: 7
+              - hour: 2
+        - |
+          # Run every 5 minutes
+          date > /tmp/crontest:
+            cron.present:
+              - user: root
+              - minute: '*/5'
+        - |
+          # Randomised minute across all minions
+          /path/to/cron/script:
+            cron.present:
+              - user: root
+              - minute: random
+              - hour: 2
+        - |
+          /path/to/cron/script:
+            cron.present:
+              - user: root
+              - special: '@hourly'
+
+    - name: absent
+      description: >-
+        Ensure the specified cron job is absent for the specified user.
+        If an identifier is not passed, the name is used to identify the
+        cron job for removal.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The command that should be absent in the user crontab."
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "The user whose crontab should be modified. Defaults to root."
+          default_value: "root"
+        - name: identifier
+          type: string
+          required: false
+          description: >-
+            Custom-defined identifier for tracking the cron line.
+            Defaults to the state name.
+          default_value: ~
+        - name: special
+          type: string
+          required: false
+          description: >-
+            The special keyword used in the job (e.g. '@daily'). Quotes
+            must be used to prevent PyYAML from stripping the '@' sign.
+          default_value: ~
+      examples:
+        - |
+          /path/to/cron/otherscript:
+            cron.absent:
+              - user: root
+              - special: '@daily'
+
+    - name: env_present
+      description: >-
+        Ensure the specified environment variable is present in the
+        crontab for the specified user.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The name of the environment variable to set."
+          default_value: ~
+        - name: value
+          type: string
+          required: false
+          description: "The value to set for the environment variable."
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "The user whose crontab should be modified. Defaults to root."
+          default_value: "root"
+      examples:
+        - |
+          MAILTO:
+            cron.env_present:
+              - value: admin@example.com
+              - user: root
+
+    - name: env_absent
+      description: >-
+        Ensure the specified environment variable is absent from the
+        crontab for the specified user.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The name of the environment variable to remove."
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "The user whose crontab should be modified. Defaults to root."
+          default_value: "root"
+      examples:
+        - |
+          MAILTO:
+            cron.env_absent:
+              - user: root
+
+    - name: file
+      description: >-
+        Provides file.managed-like functionality (templating, etc.) for a
+        pre-made crontab file, to be assigned to a given user. The source
+        file can be hosted on the Salt master (salt://) or on an HTTP/FTP
+        server (source_hash is required for HTTP/FTP sources).
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            The source file to use as the crontab. Can be a salt:// URI,
+            HTTP, or FTP URL.
+          default_value: ~
+        - name: source_hash
+          type: string
+          required: false
+          description: >-
+            Hash file or hash string for the source file
+            (e.g. "md5=e138491e9d5b97023cea823fe17bac22"). Required for
+            HTTP/FTP sources.
+          default_value: ~
+        - name: source_hash_name
+          type: string
+          required: false
+          description: >-
+            When source_hash refers to a hash file with multiple entries,
+            specifies the exact filename to match. Added in version 2016.3.5.
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "The user to whom the crontab should be assigned. Defaults to root."
+          default_value: "root"
+        - name: template
+          type: string
+          required: false
+          description: "Template engine to use (jinja or mako)."
+          default_value: ~
+        - name: context
+          type: dict
+          required: false
+          description: "Overrides default context variables passed to the template."
+          default_value: ~
+        - name: replace
+          type: bool
+          required: false
+          description: >-
+            If False, this command is ignored if a crontab already exists
+            for the user. Default is True.
+          default_value: "true"
+        - name: defaults
+          type: dict
+          required: false
+          description: "Default context passed to the template."
+          default_value: ~
+      examples:
+        - |
+          foo_crontab:
+            cron.file:
+              - name: salt://cron/root_crontab
+              - user: root
+        - |
+          foo_crontab:
+            cron.file:
+              - name: https://mydomain.tld/dir2/foo.txt
+              - source_hash: https://mydomain.tld/hashes
+              - source_hash_name: ./dir2/foo.txt

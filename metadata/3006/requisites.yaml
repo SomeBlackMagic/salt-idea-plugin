@@ -2,11 +2,448 @@ version: "1.0"
 salt_version: "3006"
 type: requisites
 requisites:
+
+  # ── Direct requisites ─────────────────────────────────────────────────────
+
   - name: require
-    description: "Require another state."
-    syntax: "- require:\n  - pkg: vim"
+    description: >-
+      Prevents a state from executing until all required states execute
+      successfully. If any required state fails, the dependent state will
+      also fail due to requisites. Can reference an entire SLS file via
+      "sls: <name>" (since Salt 0.16.0).
+    syntax: "- require:\n  - <module>: <state_id>"
     examples:
       - |
-        install_htop:
+        nginx:
+          service.running:
+            - require:
+              - file: /etc/nginx/nginx.conf
+              - file: /etc/nginx/conf.d/ssl.conf
+      - |
+        include:
+          - foo
+
+        bar:
           pkg.installed:
-            - name: htop
+            - require:
+              - sls: foo
+
+  - name: onchanges
+    description: >-
+      Makes a state only apply if the required states generate changes and
+      their result is True. Useful as a post-hook after changing aspects of
+      a system. If multiple onchanges requisites are listed, the state
+      triggers if any of the watched states changes. Has no effect on SLS
+      requisites. Added in version 2014.7.0.
+    syntax: "- onchanges:\n  - <module>: <state_id>"
+    examples:
+      - |
+        myservice:
+          file.managed:
+            - name: /etc/myservice/myservice.conf
+            - source: salt://myservice/files/myservice.conf
+          cmd.run:
+            - name: /usr/local/sbin/run-build
+            - onchanges:
+              - file: /etc/myservice/myservice.conf
+
+  - name: watch
+    description: >-
+      Adds additional behavior via mod_watch when there are changes in other
+      states. Unlike onchanges, the watching state always executes normally;
+      mod_watch is called additionally when changes occur. If mod_watch is
+      absent from the watching state module, watch behaves exactly like
+      require. Has no effect on SLS requisites.
+    syntax: "- watch:\n  - <module>: <state_id>"
+    examples:
+      - |
+        ntpd:
+          service.running:
+            - watch:
+              - file: /etc/ntp.conf
+          file.managed:
+            - name: /etc/ntp.conf
+            - source: salt://ntp/files/ntp.conf
+      - |
+        nginx:
+          service.running:
+            - reload: True
+            - watch:
+              - file: nginx
+          file.managed:
+            - name: /etc/nginx/conf.d/tls-settings.conf
+            - source: salt://nginx/files/tls-settings.conf
+
+  - name: listen
+    description: >-
+      Triggers the mod_watch function of a state module, but unlike watch,
+      the mod_watch state executes at the end of the state run rather than
+      modifying execution order. Added in version 2014.7.0.
+    syntax: "- listen:\n  - <module>: <state_id>"
+    examples:
+      - |
+        restart-apache2:
+          service.running:
+            - name: apache2
+            - listen:
+              - file: /etc/apache2/apache2.conf
+
+        configure-apache2:
+          file.managed:
+            - name: /etc/apache2/apache2.conf
+            - source: salt://apache2/apache2.conf
+
+  - name: prereq
+    description: >-
+      Executes prior to the target state if the target state expects to
+      produce changes. Salt runs the target state with test=True to
+      determine if changes are expected. If no changes are expected,
+      neither state runs. Added in version 0.16.0.
+    syntax: "- prereq:\n  - <module>: <state_id>"
+    examples:
+      - |
+        graceful-down:
+          cmd.run:
+            - name: service apache graceful
+            - prereq:
+              - file: site-code
+
+        site-code:
+          file.recurse:
+            - name: /opt/site_code
+            - source: salt://site/code
+
+  - name: onfail
+    description: >-
+      Allows reactions strictly as a response to the failure of another
+      state. By default uses OR logic for multiple requisites (any failure
+      triggers). Setting failhard globally to True will cause onfail to be
+      ignored. Added in version 2014.7.0.
+    syntax: "- onfail:\n  - <module>: <state_id>"
+    examples:
+      - |
+        primary_mount:
+          mount.mounted:
+            - name: /mnt/share
+            - device: 10.0.0.45:/share
+            - fstype: nfs
+
+        backup_mount:
+          mount.mounted:
+            - name: /mnt/share
+            - device: 192.168.40.34:/share
+            - fstype: nfs
+            - onfail:
+              - mount: primary_mount
+
+  - name: use
+    description: >-
+      Inherits the arguments passed in another state ID declaration.
+      Does not inherit the requisite arguments of the targeted state.
+      A chain of use requisites will not inherit inherited options.
+    syntax: "- use:\n  - <module>: <state_id>"
+    examples:
+      - |
+        /etc/foo.conf:
+          file.managed:
+            - source: salt://foo.conf
+            - template: jinja
+            - mkdirs: True
+            - user: apache
+            - group: apache
+            - mode: 755
+
+        /etc/bar.conf:
+          file.managed:
+            - source: salt://bar.conf
+            - use:
+              - file: /etc/foo.conf
+
+  # ── _in variants (reverse direction) ─────────────────────────────────────
+
+  - name: require_in
+    description: >-
+      Reverse of require. Forces the specified state to require the state
+      containing this requisite. Useful in loops or when defining
+      dependencies "after the fact" in included SLS files.
+    syntax: "- require_in:\n  - <module>: <state_id>"
+    examples:
+      - |
+        httpd:
+          pkg.installed:
+            - require_in:
+              - service: httpd
+          service.running: []
+      - |
+        # php.sls
+        include:
+          - http
+
+        php:
+          pkg.installed:
+            - require_in:
+              - service: httpd
+
+  - name: onchanges_in
+    description: >-
+      Reverse of onchanges. Forces the specified state to only execute
+      when the state containing this requisite generates changes.
+    syntax: "- onchanges_in:\n  - <module>: <state_id>"
+    examples:
+      - |
+        update_config:
+          file.managed:
+            - name: /etc/myservice/myservice.conf
+            - source: salt://myservice/files/myservice.conf
+            - onchanges_in:
+              - cmd: rebuild_cache
+
+  - name: watch_in
+    description: >-
+      Reverse of watch. Forces the specified state to watch the state
+      containing this requisite. Useful when the watched state is defined
+      in a separate SLS file.
+    syntax: "- watch_in:\n  - <module>: <state_id>"
+    examples:
+      - |
+        configure-apache2:
+          file.managed:
+            - name: /etc/apache2/apache2.conf
+            - source: salt://apache2/apache2.conf
+            - watch_in:
+              - service: apache2
+
+  - name: listen_in
+    description: >-
+      Reverse of listen. Forces the specified state to listen to the state
+      containing this requisite. The mod_watch action is deferred to the
+      end of the state run.
+    syntax: "- listen_in:\n  - <module>: <state_id>"
+    examples:
+      - |
+        configure-apache2:
+          file.managed:
+            - name: /etc/apache2/apache2.conf
+            - source: salt://apache2/apache2.conf
+            - listen_in:
+              - service: apache2
+
+        restart-apache2:
+          service.running:
+            - name: apache2
+      - |
+        # In a loop: each nginx config file will trigger a reload
+        {% for cfile in salt['pillar.get']('nginx:config_files') %}
+        /etc/nginx/conf.d/{{ cfile }}:
+          file.managed:
+            - source: salt://nginx/configs/{{ cfile }}
+            - require:
+              - pkg: nginx
+            - listen_in:
+              - service: nginx
+        {% endfor %}
+
+  - name: prereq_in
+    description: >-
+      Reverse of prereq. Forces the specified state to run before the state
+      containing this requisite, provided changes are expected.
+    syntax: "- prereq_in:\n  - <module>: <state_id>"
+    examples:
+      - |
+        site-code:
+          file.recurse:
+            - name: /opt/site_code
+            - source: salt://site/code
+            - prereq_in:
+              - cmd: graceful-down
+
+  - name: onfail_in
+    description: >-
+      Reverse of onfail. Forces the specified state to execute only if
+      the state containing this requisite fails.
+    syntax: "- onfail_in:\n  - <module>: <state_id>"
+    examples:
+      - |
+        primary_mount:
+          mount.mounted:
+            - name: /mnt/share
+            - device: 10.0.0.45:/share
+            - fstype: nfs
+            - onfail_in:
+              - mount: backup_mount
+
+  - name: use_in
+    description: >-
+      Reverse of use. Forces the specified state to inherit the arguments
+      from the state containing this requisite.
+    syntax: "- use_in:\n  - <module>: <state_id>"
+    examples:
+      - |
+        /etc/foo.conf:
+          file.managed:
+            - source: salt://foo.conf
+            - template: jinja
+            - user: apache
+            - group: apache
+            - mode: 755
+            - use_in:
+              - file: /etc/bar.conf
+
+  # ── _any variants ─────────────────────────────────────────────────────────
+
+  - name: require_any
+    description: >-
+      Requires ANY of the listed states to succeed before execution,
+      rather than ALL (OR logic). Added in version 2018.3.0.
+    syntax: "- require_any:\n  - <module>: <state_id>"
+    examples:
+      - |
+        A:
+          cmd.run:
+            - name: echo A
+            - require_any:
+              - cmd: B
+              - cmd: C
+
+        B:
+          cmd.run:
+            - name: echo B
+
+        C:
+          cmd.run:
+            - name: /bin/false
+
+  - name: watch_any
+    description: >-
+      Triggers mod_watch behavior if ANY of the listed states have changes.
+      Added in version 2018.3.0.
+    syntax: "- watch_any:\n  - <module>: <state_id>"
+    examples:
+      - |
+        myservice:
+          service.running:
+            - watch_any:
+              - file: /etc/myservice/myservice.conf
+              - file: /etc/myservice/extra.conf
+
+  - name: onchanges_any
+    description: >-
+      Executes if ANY of the listed states have changes and result is True.
+      Added in version 2018.3.0.
+    syntax: "- onchanges_any:\n  - <module>: <state_id>"
+    examples:
+      - |
+        /usr/local/sbin/myservice/post-changes-hook.sh:
+          cmd.run:
+            - onchanges_any:
+              - file: /etc/myservice/myservice.conf
+              - file: /etc/yourservice/yourservice.conf
+            - require:
+              - pkg: myservice
+
+  - name: onfail_any
+    description: >-
+      Executes if ANY of the listed states fail (OR logic). This is
+      equivalent to the default onfail behavior. Added in version 2018.3.0.
+    syntax: "- onfail_any:\n  - <module>: <state_id>"
+    examples:
+      - |
+        notify_failure:
+          cmd.run:
+            - name: echo "A failure occurred"
+            - onfail_any:
+              - cmd: test_site_a
+              - cmd: test_site_b
+
+  - name: onfail_all
+    description: >-
+      Executes only if ALL of the listed states fail (AND logic). Special
+      form of onfail for cases where AND logic is desired instead of the
+      default OR logic of onfail/onfail_any.
+    syntax: "- onfail_all:\n  - <module>: <state_id>"
+    examples:
+      - |
+        test_site_a:
+          cmd.run:
+            - name: ping -c1 10.0.0.1
+
+        test_site_b:
+          cmd.run:
+            - name: ping -c1 10.0.0.2
+
+        notify_site_down:
+          cmd.run:
+            - name: echo "Both primary and backup sites are down!"
+            - onfail_all:
+              - cmd: test_site_a
+              - cmd: test_site_b
+
+  # ── Conditional state arguments ───────────────────────────────────────────
+
+  - name: unless
+    description: >-
+      Specifies that a state should only run when any of the specified
+      commands return False (NAND logic). Under the hood calls cmd.retcode
+      with python_shell=True. Can also accept a Salt module as a dictionary
+      with a "fun" key. Added in version 2014.7.0.
+    syntax: "- unless:\n  - <shell_command>"
+    examples:
+      - |
+        vim:
+          pkg.installed:
+            - unless:
+              - rpm -q vim-enhanced
+              - ls /usr/bin/vim
+      - |
+        install apache on debian based distros:
+          cmd.run:
+            - name: make install
+            - cwd: /path/to/dir/whatever-2.1.5/
+            - unless:
+              - fun: file.file_exists
+                path: /usr/local/bin/whatever
+
+  - name: onlyif
+    description: >-
+      Specifies that a state should only run when each command listed
+      returns True. If any command returns False, the state will not run.
+      Under the hood calls cmd.retcode with python_shell=True. Can also
+      accept a Salt module as a dictionary with a "fun" key.
+      Added in version 2014.7.0.
+    syntax: "- onlyif:\n  - <shell_command>"
+    examples:
+      - |
+        stop-volume:
+          module.run:
+            - name: glusterfs.stop_volume
+            - m_name: work
+            - onlyif:
+              - gluster volume status work
+      - |
+        install apache on redhat based distros:
+          pkg.latest:
+            - name: httpd
+            - onlyif:
+              - fun: match.grain
+                tgt: 'os_family:RedHat'
+
+  - name: creates
+    description: >-
+      Specifies that a state should only run when any of the specified files
+      do not already exist (NAND logic). Accepts a single file path or a
+      list. If a list is provided, the state runs if any file in the list
+      does not exist. Added in version 3001.
+    syntax: "- creates: <file_path>"
+    examples:
+      - |
+        contrived creates example:
+          file.touch:
+            - name: /path/to/file
+            - creates: /path/to/file
+      - |
+        creates list:
+          cmd.run:
+            - name: /path/to/command
+            - creates:
+              - /path/file
+              - /path/file2

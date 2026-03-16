@@ -1,0 +1,97 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: module
+  description: >-
+    State module for calling Salt execution modules directly from within
+    the state system. Salt execution modules are different from state modules
+    and cannot be called as a state directly — module.run must be used as
+    the wrapper. Supports reload_modules, reload_pillar, and reload_grains
+    options to force Salt to reload its internal data after the state runs.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.module.html"
+  functions:
+
+    - name: run
+      description: >-
+        Call a Salt execution module function. The name parameter specifies
+        the dotted function name (e.g. "user.rename", "saltutil.refresh_grains",
+        "glusterfs.stop_volume"). Additional arguments are passed as
+        extra parameters. Parameters that conflict with YAML or Salt reserved
+        keywords are prefixed with "m_" (e.g. m_name instead of name).
+        Supports reload_grains, reload_pillar, and reload_modules boolean
+        options to refresh Salt's internal state after execution.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            Dotted name of the execution module function to call
+            (e.g. "user.rename", "saltutil.refresh_grains",
+            "glusterfs.stop_volume").
+          default_value: ~
+        - name: m_name
+          type: string
+          required: false
+          description: >-
+            Passes the value as the "name" argument to the called function.
+            The "m_" prefix is used to avoid conflict with the state's own
+            "name" parameter.
+          default_value: ~
+        - name: reload_grains
+          type: bool
+          required: false
+          description: >-
+            If True, forces Salt to reload its grains after the state
+            finishes executing.
+          default_value: "false"
+        - name: reload_pillar
+          type: bool
+          required: false
+          description: >-
+            If True, forces Salt to reload pillar data after the state
+            finishes executing.
+          default_value: "false"
+        - name: reload_modules
+          type: bool
+          required: false
+          description: >-
+            If True, forces Salt to reload all of its modules after the
+            state finishes executing.
+          default_value: "false"
+      examples:
+        - |
+          # Execution modules cannot be called directly as states.
+          # Use module.run instead:
+          rename_moe:
+            module.run:
+              - name: user.rename
+              - m_name: moe
+              - new_name: larry
+              - onlyif: id moe
+        - |
+          grains_refresh:
+            module.run:
+              - name: saltutil.refresh_grains
+              - reload_grains: true
+
+          grains_read:
+            module.run:
+              - name: grains.items
+        - |
+          stop-volume:
+            module.run:
+              - name: glusterfs.stop_volume
+              - m_name: work
+              - onlyif:
+                - gluster volume status work
+              - order: 1
+
+          remove-volume:
+            module.run:
+              - name: glusterfs.delete
+              - m_name: work
+              - onlyif:
+                - gluster volume info work
+              - watch:
+                - cmd: stop-volume

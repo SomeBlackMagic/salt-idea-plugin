@@ -1,0 +1,104 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: pip
+  description: >-
+    Python pip package management states. Allows installing, upgrading,
+    and removing Python packages via pip on minions. Commonly requires
+    the python-pip system package to be installed first via pkg.installed.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.pip_state.html"
+  functions:
+
+    - name: installed
+      description: >-
+        Ensure that a Python package is installed via pip. Supports version
+        constraints in the package name string (e.g. "django >= 1.6, <= 1.7").
+        The runas parameter sets the user under which pip is invoked —
+        the pip command run by cmd.run will be run as that user.
+        Typically requires python-pip or python3-pip to be installed first.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            Name of the Python package to install. Supports PEP 440
+            version specifiers (e.g. "django >= 1.6, <= 1.7",
+            "requests==2.28.0").
+          default_value: ~
+        - name: pkgs
+          type: list
+          required: false
+          description: >-
+            List of Python packages to install in a single pip call.
+            When specified, the name parameter is ignored.
+          default_value: ~
+        - name: requirements
+          type: string
+          required: false
+          description: >-
+            Path or salt:// URI of a requirements.txt file. All packages
+            listed in the file will be installed.
+          default_value: ~
+        - name: bin_env
+          type: string
+          required: false
+          description: >-
+            Path to a virtualenv directory or to the pip binary to use.
+            Allows targeting a specific virtualenv.
+          default_value: ~
+        - name: runas
+          type: string
+          required: false
+          description: >-
+            User to run the pip install command as. The pip command
+            run by cmd.run will be executed by this user. Added as a
+            global runas state argument in version 2017.7.0.
+          default_value: ~
+        - name: upgrade
+          type: bool
+          required: false
+          description: "If True, upgrade the package if it is already installed."
+          default_value: "false"
+      examples:
+        - |
+          django:
+            pip.installed:
+              - name: django >= 1.6, <= 1.7
+              - runas: daniel
+              - require:
+                - pkg: python-pip
+        - |
+          install_requirements:
+            pip.installed:
+              - requirements: salt://myapp/requirements.txt
+              - bin_env: /opt/myapp/venv
+              - require:
+                - pkg: python3-pip
+
+    - name: removed
+      description: >-
+        Ensure that a Python package is not installed via pip. If the
+        package is present, it will be uninstalled.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the Python package to remove."
+          default_value: ~
+        - name: bin_env
+          type: string
+          required: false
+          description: "Path to a virtualenv or pip binary to use."
+          default_value: ~
+        - name: runas
+          type: string
+          required: false
+          description: "User to run the pip uninstall command as."
+          default_value: ~
+      examples:
+        - |
+          remove_old_lib:
+            pip.removed:
+              - name: some-old-package
+              - runas: appuser

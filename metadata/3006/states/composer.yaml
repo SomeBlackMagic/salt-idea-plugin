@@ -1,0 +1,100 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: composer
+  description: >-
+    PHP Composer dependency management states. Manages PHP project
+    dependencies via Composer. Requires Composer to be installed on
+    the minion (typically via pkg.installed for the composer package,
+    or by downloading composer.phar).
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.composer.html"
+  functions:
+
+    - name: installed
+      description: >-
+        Ensure that Composer has installed the dependencies for a PHP
+        project. Runs 'composer install' in the specified directory if
+        the vendor directory is absent or if the composer.lock file has
+        changed.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path to the PHP project directory containing composer.json."
+          default_value: ~
+        - name: composer
+          type: string
+          required: false
+          description: "Path to the composer executable. Defaults to the system composer."
+          default_value: ~
+        - name: php
+          type: string
+          required: false
+          description: "Path to the PHP executable. Defaults to system php."
+          default_value: ~
+        - name: runas
+          type: string
+          required: false
+          description: "User to run composer as."
+          default_value: ~
+        - name: prefer_source
+          type: bool
+          required: false
+          description: "If True, pass --prefer-source to composer install."
+          default_value: "false"
+        - name: prefer_dist
+          type: bool
+          required: false
+          description: "If True, pass --prefer-dist to composer install."
+          default_value: "false"
+        - name: no_dev
+          type: bool
+          required: false
+          description: "If True, pass --no-dev to skip dev dependencies."
+          default_value: "false"
+        - name: quiet
+          type: bool
+          required: false
+          description: "If True, suppress composer output."
+          default_value: "false"
+      examples:
+        - |
+          /var/www/myapp:
+            composer.installed:
+              - runas: www-data
+              - no_dev: True
+              - require:
+                - pkg: php
+                - pkg: composer
+
+    - name: update
+      description: >-
+        Ensure Composer dependencies are up-to-date by running
+        'composer update' in the specified directory.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path to the PHP project directory."
+          default_value: ~
+        - name: composer
+          type: string
+          required: false
+          description: "Path to the composer executable."
+          default_value: ~
+        - name: runas
+          type: string
+          required: false
+          description: "User to run composer as."
+          default_value: ~
+        - name: no_dev
+          type: bool
+          required: false
+          description: "If True, skip dev dependencies."
+          default_value: "false"
+      examples:
+        - |
+          /var/www/myapp:
+            composer.update:
+              - runas: www-data

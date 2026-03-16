@@ -1,0 +1,136 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: docker_container
+  description: >-
+    Management of Docker containers. Provides states for running,
+    stopping, and removing Docker containers. Requires Docker to be
+    installed and the Docker daemon to be running.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.docker_container.html"
+  functions:
+
+    - name: running
+      description: >-
+        Ensure a Docker container is running. If the container does not
+        exist, it is created and started from the specified image. If
+        the container exists but is stopped, it is started. Supports
+        the creates global state argument.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the Docker container."
+          default_value: ~
+        - name: image
+          type: string
+          required: true
+          description: >-
+            Docker image to use (e.g. 'nginx:latest', 'myrepo/myapp:1.0').
+          default_value: ~
+        - name: binds
+          type: list
+          required: false
+          description: >-
+            Volume bind mounts in 'host_path:container_path:mode' format
+            (e.g. ['/srv/data:/data:rw']).
+          default_value: ~
+        - name: port_bindings
+          type: dict
+          required: false
+          description: >-
+            Port bindings mapping container ports to host ports
+            (e.g. {'80/tcp': 8080}).
+          default_value: ~
+        - name: environment
+          type: list
+          required: false
+          description: >-
+            List of environment variables in 'KEY=value' format
+            or a dict.
+          default_value: ~
+        - name: network_mode
+          type: string
+          required: false
+          description: "Network mode: 'bridge', 'host', 'none', or a network name."
+          default_value: ~
+        - name: restart_policy
+          type: dict
+          required: false
+          description: >-
+            Restart policy dict with 'Name' (e.g. 'always', 'on-failure',
+            'unless-stopped') and optionally 'MaximumRetryCount'.
+          default_value: ~
+        - name: privileged
+          type: bool
+          required: false
+          description: "If True, run the container in privileged mode."
+          default_value: "false"
+        - name: user
+          type: string
+          required: false
+          description: "User to run the container as."
+          default_value: ~
+        - name: command
+          type: string
+          required: false
+          description: "Override the default command for the container."
+          default_value: ~
+      examples:
+        - |
+          nginx_container:
+            docker_container.running:
+              - name: nginx
+              - image: nginx:latest
+              - binds:
+                - /srv/www:/usr/share/nginx/html:ro
+              - port_bindings:
+                  80/tcp: 80
+              - restart_policy:
+                  Name: always
+              - require:
+                - docker_image: nginx_image
+
+    - name: stopped
+      description: >-
+        Ensure a Docker container is stopped. If the container is
+        running, it is stopped. If it does not exist, the state succeeds.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name or ID of the Docker container to stop."
+          default_value: ~
+        - name: timeout
+          type: int
+          required: false
+          description: "Seconds to wait before sending SIGKILL. Defaults to 10."
+          default_value: "10"
+      examples:
+        - |
+          stop_nginx:
+            docker_container.stopped:
+              - name: nginx
+
+    - name: absent
+      description: >-
+        Ensure a Docker container does not exist. If the container exists
+        (running or stopped), it is removed. Running containers are
+        stopped before removal.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name or ID of the Docker container to remove."
+          default_value: ~
+        - name: force
+          type: bool
+          required: false
+          description: "If True, force removal of a running container."
+          default_value: "false"
+      examples:
+        - |
+          remove_old_container:
+            docker_container.absent:
+              - name: old_app
+              - force: True

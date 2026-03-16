@@ -1,0 +1,83 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: cp
+  description: >-
+    Salt file copy states. Provides states for copying files and
+    directories from the Salt file server to the minion. Note: for
+    most use cases, file.managed is preferred as it provides idempotent
+    management with checksum verification.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.cp.html"
+  functions:
+
+    - name: get_file
+      description: >-
+        Ensure a file from the Salt file server is present on the minion.
+        Copies the file from the master to the specified destination.
+        Unlike file.managed, does not verify checksums on subsequent runs.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The salt:// URI of the source file on the file server."
+          default_value: ~
+        - name: dest
+          type: string
+          required: true
+          description: "Absolute path of the destination on the minion."
+          default_value: ~
+        - name: makedirs
+          type: bool
+          required: false
+          description: "If True, create parent directories if they do not exist."
+          default_value: "false"
+        - name: template
+          type: string
+          required: false
+          description: "Template engine to render the file with (e.g. 'jinja')."
+          default_value: ~
+        - name: gzip
+          type: int
+          required: false
+          description: "Gzip compression level (1-9) if the file is gzip-compressed."
+          default_value: ~
+      examples:
+        - |
+          copy_config:
+            cp.get_file:
+              - name: salt://myapp/config.conf
+              - dest: /etc/myapp/config.conf
+              - makedirs: True
+
+    - name: get_dir
+      description: >-
+        Ensure a directory from the Salt file server is present on the
+        minion. Recursively copies all files from the source directory.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The salt:// URI of the source directory."
+          default_value: ~
+        - name: dest
+          type: string
+          required: true
+          description: "Absolute path of the destination directory on the minion."
+          default_value: ~
+        - name: makedirs
+          type: bool
+          required: false
+          description: "If True, create parent directories if they do not exist."
+          default_value: "false"
+        - name: template
+          type: string
+          required: false
+          description: "Template engine to render files with."
+          default_value: ~
+      examples:
+        - |
+          copy_configs:
+            cp.get_dir:
+              - name: salt://myapp/configs
+              - dest: /etc/myapp/

@@ -3,19 +3,193 @@ salt_version: "3006"
 type: state_module
 module:
   name: pkg
-  description: "Package management states."
+  description: >-
+    Package management states. Allows installing, removing, and managing
+    software packages on minions. Salt execution modules are different from
+    state modules and cannot be called as a state unless wrapped in
+    module.run.
   doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.pkg.html"
   functions:
+
     - name: installed
-      description: "Ensure that a package is installed."
+      description: >-
+        Ensure that a package or list of packages is installed. If the
+        package is already installed, the state will not reinstall it.
+        Supports specifying a version or allowing the latest available.
       parameters:
         - name: name
           type: string
           required: true
-          description: "Package name to install."
+          description: "Name of the package to install."
           default_value: ~
+        - name: version
+          type: string
+          required: false
+          description: >-
+            Specific version of the package to install. If not specified,
+            the latest available version is installed.
+          default_value: ~
+        - name: pkgs
+          type: list
+          required: false
+          description: >-
+            List of packages to install in a single call. When specified,
+            the name parameter is ignored.
+          default_value: ~
+        - name: refresh
+          type: bool
+          required: false
+          description: >-
+            Update the package database before installing. Equivalent to
+            running 'apt-get update' or 'yum makecache'.
+          default_value: "false"
       examples:
         - |
           install_vim:
             pkg.installed:
               - name: vim
+        - |
+          install_web_stack:
+            pkg.installed:
+              - pkgs:
+                - nginx
+                - git
+                - curl
+        - |
+          nano_stuff:
+            pkg.installed:
+              - name: nano
+              - fire_event: True
+        - |
+          my_retried_state:
+            pkg.installed:
+              - name: nano
+              - retry:
+                  attempts: 5
+                  until: True
+                  interval: 60
+                  splay: 10
+
+    - name: latest
+      description: >-
+        Ensure that a package is installed and up-to-date with the latest
+        available version. If the package is not installed, it will be
+        installed. If it is installed but not the latest version, it will
+        be upgraded.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the package to ensure is at its latest version."
+          default_value: ~
+        - name: pkgs
+          type: list
+          required: false
+          description: >-
+            List of packages to ensure are at their latest versions in a
+            single call.
+          default_value: ~
+        - name: refresh
+          type: bool
+          required: false
+          description: "Update the package database before checking for updates."
+          default_value: "false"
+      examples:
+        - |
+          install apache on redhat based distros:
+            pkg.latest:
+              - name: httpd
+              - onlyif:
+                - fun: match.grain
+                  tgt: 'os_family:RedHat'
+        - |
+          install apache on debian based distros:
+            pkg.latest:
+              - name: apache2
+              - onlyif:
+                - fun: match.grain
+                  tgt: 'os_family:Debian'
+
+    - name: removed
+      description: >-
+        Ensure that a package is not installed. If the package is already
+        absent, the state will succeed without making changes. Configuration
+        files are preserved (compare with purged).
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the package to remove."
+          default_value: ~
+        - name: pkgs
+          type: list
+          required: false
+          description: "List of packages to remove in a single call."
+          default_value: ~
+      examples:
+        - |
+          remove_telnet:
+            pkg.removed:
+              - name: telnet
+        - |
+          remove_old_packages:
+            pkg.removed:
+              - pkgs:
+                - telnet
+                - rsh-client
+
+    - name: purged
+      description: >-
+        Ensure that a package is not installed and that its configuration
+        files are also removed. Similar to removed but additionally purges
+        configuration files left behind by the package manager (e.g.
+        'apt-get purge' on Debian-based systems).
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the package to purge."
+          default_value: ~
+        - name: pkgs
+          type: list
+          required: false
+          description: "List of packages to purge in a single call."
+          default_value: ~
+      examples:
+        - |
+          purge_apache:
+            pkg.purged:
+              - name: apache2
+
+    - name: uptodate
+      description: >-
+        Ensure that the minion's package manager is up to date. This
+        state upgrades all installed packages to their latest available
+        versions. Optionally refreshes the package database first.
+      parameters:
+        - name: name
+          type: string
+          required: false
+          description: >-
+            Arbitrary name for the state (not a package name). Only used
+            as the state identifier.
+          default_value: ~
+        - name: refresh
+          type: bool
+          required: false
+          description: >-
+            Update the package database before upgrading. Equivalent to
+            running 'apt-get update' before 'apt-get upgrade'.
+          default_value: "false"
+        - name: dist_upgrade
+          type: bool
+          required: false
+          description: >-
+            Perform a distribution upgrade (e.g. 'apt-get dist-upgrade')
+            rather than a standard upgrade. Debian/Ubuntu only.
+          default_value: "false"
+      examples:
+        - |
+          system_uptodate:
+            pkg.uptodate:
+              - refresh: True

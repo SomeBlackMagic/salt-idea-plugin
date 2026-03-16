@@ -1,0 +1,245 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: test
+  description: >-
+    Test case states for easy testing of state calls, requisites,
+    logging, and output filtering. Also useful for controlled failure
+    in state definitions when certain conditions in pillar or grains
+    do not apply.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.test.html"
+  functions:
+
+    - name: nop
+      description: >-
+        A no-op state that does nothing. Useful in conjunction with the
+        'use' requisite, or in templates that could otherwise be empty
+        due to Jinja rendering. Added in version 2015.8.1.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A unique string to serve as the state's ID."
+          default_value: ~
+      examples:
+        - |
+          always-passes-with-any-kwarg:
+            test.nop:
+              - name: foo
+              - something: else
+              - foo: bar
+
+    - name: succeed_without_changes
+      description: >-
+        Returns True with an empty changes dictionary. Useful for
+        testing requisites that only trigger on changes. Added in
+        version 2014.7.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A unique string to serve as the state's ID."
+          default_value: ~
+      examples:
+        - |
+          always-passes:
+            test.succeed_without_changes:
+              - name: foo
+        - |
+          this_state_will_NOT_return_changes:
+            test.succeed_without_changes
+
+          this_state_is_watching_another_state:
+            test.succeed_without_changes:
+              - comment: 'This is a custom comment'
+              - watch:
+                - test: this_state_will_return_changes
+
+    - name: fail_without_changes
+      description: >-
+        Returns False with an empty changes dictionary. Useful for
+        testing onfail requisites or controlled failure with failhard.
+        Added in version 2014.7.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A unique string to serve as the state's ID."
+          default_value: ~
+      examples:
+        - |
+          always-fails:
+            test.fail_without_changes:
+              - name: foo
+        - |
+          {% if grains['os'] in ['Ubuntu', 'CentOS'] %}
+          # Your state definitions go here
+          {% else %}
+          failure:
+            test.fail_without_changes:
+              - name: "OS not supported!"
+              - failhard: True
+          {% endif %}
+
+    - name: succeed_with_changes
+      description: >-
+        Returns True with a non-empty changes dictionary. Useful for
+        testing requisites that trigger on changes (watch, onchanges).
+        Added in version 2014.7.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A unique string to serve as the state's ID."
+          default_value: ~
+      examples:
+        - |
+          always-changes-and-succeeds:
+            test.succeed_with_changes:
+              - name: foo
+
+    - name: fail_with_changes
+      description: >-
+        Returns False with a non-empty changes dictionary. Useful for
+        testing requisites. Added in version 2014.7.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A unique string to serve as the state's ID."
+          default_value: ~
+      examples:
+        - |
+          always-changes-and-fails:
+            test.fail_with_changes:
+              - name: foo
+
+    - name: configurable_test_state
+      description: >-
+        A configurable test state providing full control over the return
+        data — result, changes, comment, and warnings. Supports 'Random'
+        as a value for changes and result to randomly return True or False.
+        In test mode with result=True and changes=True, returns None.
+        Added in version 2014.7.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A unique string to serve as the state's ID."
+          default_value: ~
+        - name: changes
+          type: bool
+          required: false
+          description: >-
+            Controls whether the state reports changes. True: reports changes.
+            False: no changes. 'Random': randomly reports either.
+          default_value: "true"
+        - name: result
+          type: bool
+          required: false
+          description: >-
+            Controls the result. True: reports True. False: reports False.
+            'Random': randomly reports either.
+          default_value: "true"
+        - name: comment
+          type: string
+          required: false
+          description: "Comment string to include in the state return."
+          default_value: ""
+        - name: warnings
+          type: string
+          required: false
+          description: >-
+            A string or list of strings to fill the warnings field.
+            Added in version 3000.
+          default_value: ~
+        - name: allow_test_mode_failure
+          type: bool
+          required: false
+          description: >-
+            When True and result is False, allows test mode to also return
+            False. Default is False. Added in version 3007.0.
+          default_value: "false"
+      examples:
+        - |
+          my-custom-combo:
+            test.configurable_test_state:
+              - name: foo
+              - changes: True
+              - result: False
+              - comment: bar.baz
+              - warnings: A warning
+
+    - name: check_pillar
+      description: >-
+        Check the presence and optionally the type of given keys in Pillar.
+        Supported type kwargs: boolean (bool), integer (int), string (str),
+        listing (list), dictionary (dict). Checking for None type pillars
+        is not implemented yet.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A unique string to serve as the state's ID."
+          default_value: ~
+        - name: present
+          type: list
+          required: false
+          description: "List of pillar keys that must be present."
+          default_value: ~
+        - name: boolean
+          type: list
+          required: false
+          description: "List of pillar keys that must exist and be of type bool."
+          default_value: ~
+        - name: integer
+          type: list
+          required: false
+          description: "List of pillar keys that must exist and be of type int."
+          default_value: ~
+        - name: string
+          type: list
+          required: false
+          description: "List of pillar keys that must exist and be of type str."
+          default_value: ~
+        - name: listing
+          type: list
+          required: false
+          description: "List of pillar keys that must exist and be of type list."
+          default_value: ~
+        - name: dictionary
+          type: list
+          required: false
+          description: "List of pillar keys that must exist and be of type dict."
+          default_value: ~
+      examples:
+        - |
+          is-pillar-foo-present-and-bar-is-int:
+            test.check_pillar:
+              - present:
+                  - foo
+              - integer:
+                  - bar
+
+    - name: show_notification
+      description: >-
+        Simple notification state that returns text in the comment field.
+        Added in version 2015.8.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A unique string to serve as the state's ID."
+          default_value: ~
+        - name: text
+          type: string
+          required: false
+          description: "Text to return in the comment field."
+          default_value: ~
+      examples:
+        - |
+          notify_deploy:
+            test.show_notification:
+              - name: info
+              - text: "Deployment started"

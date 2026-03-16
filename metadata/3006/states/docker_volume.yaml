@@ -1,0 +1,59 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: docker_volume
+  description: >-
+    Management of Docker volumes. Allows creating and removing named
+    Docker volumes on minions. Requires Docker to be installed.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.docker_volume.html"
+  functions:
+
+    - name: present
+      description: >-
+        Ensure a Docker named volume exists. If the volume does not
+        exist, it is created with the specified driver and options.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the Docker volume."
+          default_value: ~
+        - name: driver
+          type: string
+          required: false
+          description: "Volume driver to use. Defaults to 'local'."
+          default_value: "local"
+        - name: driver_opts
+          type: dict
+          required: false
+          description: "Driver-specific options as key-value pairs."
+          default_value: ~
+        - name: labels
+          type: list
+          required: false
+          description: "List of labels to apply to the volume."
+          default_value: ~
+      examples:
+        - |
+          myapp_data:
+            docker_volume.present:
+              - name: myapp_data
+              - driver: local
+
+    - name: absent
+      description: >-
+        Ensure a Docker named volume does not exist. If the volume
+        exists, it is removed. Fails if the volume is in use by a
+        container.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the Docker volume to remove."
+          default_value: ~
+      examples:
+        - |
+          remove_old_volume:
+            docker_volume.absent:
+              - name: old_data

@@ -1,0 +1,33 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: ntp
+  description: >-
+    Management of NTP servers. Added in version 2014.1.0. Currently
+    only Windows is supported for this state module.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.ntp.html"
+  functions:
+
+    - name: managed
+      description: >-
+        Ensure NTP servers are configured. Currently only supported on
+        Windows. Added in version 2014.1.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Arbitrary state identifier name."
+          default_value: ~
+        - name: servers
+          type: list
+          required: false
+          description: "A list of NTP server hostnames or addresses to configure."
+          default_value: ~
+      examples:
+        - |
+          win_ntp:
+            ntp.managed:
+              - servers:
+                - pool.ntp.org
+                - us.pool.ntp.org

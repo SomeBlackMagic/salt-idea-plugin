@@ -2,7 +2,193 @@ version: "1.0"
 salt_version: "3006"
 type: grains
 grains:
+
+  # ── Operating system ──────────────────────────────────────────────────────
+
   - name: os
-    description: "Operating system name"
+    description: >-
+      Operating system name. Grains resolve to lowercase letters;
+      "FOO" and "foo" target the same grain. Referenced via grains['os']
+      in SLS templates and top file matchers.
     type: string
-    values: [Ubuntu, Debian, Fedora]
+    values:
+      - Ubuntu
+      - Debian
+      - Fedora
+      - RedHat
+      - CentOS
+      - Arch
+      - Gentoo
+      - openSUSE
+      - Windows
+      - FreeBSD
+      - MacOS
+
+  - name: os_family
+    description: >-
+      Operating system family, grouping related distributions together.
+      Used for cross-distro targeting in top files and requisites,
+      e.g. 'os_family:RedHat' or 'os_family:Debian'.
+    type: string
+    values:
+      - Debian
+      - RedHat
+      - Arch
+      - Gentoo
+      - Suse
+      - FreeBSD
+      - Windows
+      - Solaris
+
+  - name: osrelease
+    description: >-
+      Operating system release version string (e.g. "22.04" for Ubuntu
+      22.04, "9" for Debian 9).
+    type: string
+
+  - name: oscodename
+    description: >-
+      Operating system codename where applicable (e.g. "jammy" for
+      Ubuntu 22.04, "bookworm" for Debian 12).
+    type: string
+
+  - name: osfullname
+    description: >-
+      Full operating system name including version information
+      (e.g. "Ubuntu 22.04.3 LTS").
+    type: string
+
+  # ── Kernel ────────────────────────────────────────────────────────────────
+
+  - name: kernel
+    description: >-
+      Kernel type. One of the system properties collected by the
+      grains interface.
+    type: string
+    values:
+      - Linux
+      - Windows
+      - Darwin
+      - FreeBSD
+
+  - name: kernelrelease
+    description: >-
+      Kernel release version string (e.g. "5.15.0-91-generic").
+    type: string
+
+  - name: kernelarch
+    description: >-
+      Kernel architecture as reported by uname (e.g. "x86_64").
+    type: string
+
+  # ── CPU & Memory ──────────────────────────────────────────────────────────
+
+  - name: cpuarch
+    description: >-
+      CPU architecture of the minion (e.g. "x86_64", "aarch64").
+      Part of OS type system properties collected by grains.
+    type: string
+    values:
+      - x86_64
+      - aarch64
+      - armv7l
+      - i386
+
+  - name: num_cpus
+    description: >-
+      Number of logical CPU cores on the minion. Part of system
+      properties collected by the grains interface.
+    type: int
+
+  - name: mem_total
+    description: >-
+      Total system memory in megabytes. Part of memory system
+      properties collected by the grains interface.
+    type: int
+
+  # ── Network ───────────────────────────────────────────────────────────────
+
+  - name: fqdn
+    description: >-
+      Fully qualified domain name of the minion. Part of domain name
+      system properties collected by the grains interface.
+    type: string
+
+  - name: host
+    description: >-
+      Hostname of the minion (without domain). Part of domain name
+      properties collected by the grains interface.
+    type: string
+
+  - name: domain
+    description: >-
+      Domain name of the minion. Part of domain name system properties
+      collected by the grains interface.
+    type: string
+
+  - name: ipv4
+    description: >-
+      List of IPv4 addresses configured on all interfaces of the minion.
+      Part of IP address system properties collected by the grains interface.
+    type: list
+
+  - name: ipv6
+    description: >-
+      List of IPv6 addresses configured on all interfaces of the minion.
+      Part of IP address system properties collected by the grains interface.
+    type: list
+
+  # ── Minion identity ───────────────────────────────────────────────────────
+
+  - name: id
+    description: >-
+      The Salt minion ID. Used for targeting and identification.
+      Accessible as grains['id'] in SLS templates.
+    type: string
+
+  - name: saltversion
+    description: >-
+      Version of Salt installed on the minion
+      (e.g. "3006.0"). Collected as part of system properties.
+    type: string
+
+  # ── Virtualization ────────────────────────────────────────────────────────
+
+  - name: virtual
+    description: >-
+      Virtualization type detected on the minion. "physical" indicates
+      bare-metal hardware.
+    type: string
+    values:
+      - physical
+      - VirtualBox
+      - VMware
+      - kvm
+      - xen
+      - lxc
+      - docker
+      - openvzve
+      - parallels
+
+  # ── Custom static grains (examples from documentation) ───────────────────
+
+  - name: roles
+    description: >-
+      Custom static grain for assigning roles to a minion. Defined in
+      the minion configuration file or /etc/salt/grains. Used for
+      targeting in the top file, e.g. 'roles:webserver'.
+      Grains in /etc/salt/grains are ignored if the same grain is also
+      defined in the minion config.
+    type: list
+
+  - name: deployment
+    description: >-
+      Custom static grain for identifying the deployment environment
+      of a minion. Defined in minion config or /etc/salt/grains.
+    type: string
+
+  - name: pythonversion
+    description: >-
+      Python version list on the minion as reported by the grains system,
+      e.g. [3, 10, 12, "final", 0].
+    type: list

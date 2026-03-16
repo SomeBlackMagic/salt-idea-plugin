@@ -1,0 +1,147 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: service
+  description: >-
+    Service management states. Allows managing system services (daemons)
+    on minions — starting, stopping, enabling, and reloading them.
+    A good example of using the watch requisite is with service.running:
+    when a service watches a state, the service is reloaded/restarted
+    when the watched state changes, in addition to Salt ensuring the
+    service is running.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.service.html"
+  functions:
+
+    - name: running
+      description: >-
+        Ensure that a service is running. If the service is not running,
+        it will be started. Supports the watch requisite via mod_watch:
+        when a watched state changes, the service is reloaded or restarted.
+        Note: if a state should only execute when another state has changes
+        and otherwise do nothing, use the onchanges requisite instead of
+        watch. watch is designed to add additional behavior on changes while
+        the state still executes normally.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the service to ensure is running."
+          default_value: ~
+        - name: enable
+          type: bool
+          required: false
+          description: >-
+            Set the service to start at boot. True enables the service,
+            False disables it. If not specified, the boot state is not
+            managed.
+          default_value: ~
+        - name: reload
+          type: bool
+          required: false
+          description: >-
+            If True, issues a reload command instead of a restart when
+            mod_watch is triggered. Useful for services like nginx where
+            a reload avoids dropping active connections.
+          default_value: "false"
+      examples:
+        - |
+          nginx:
+            service.running:
+              - enable: True
+              - require:
+                - pkg: nginx
+        - |
+          ntpd:
+            service.running:
+              - watch:
+                - file: /etc/ntp.conf
+            file.managed:
+              - name: /etc/ntp.conf
+              - source: salt://ntp/files/ntp.conf
+        - |
+          nginx:
+            service.running:
+              - reload: True
+              - watch:
+                - file: nginx
+            file.managed:
+              - name: /etc/nginx/conf.d/tls-settings.conf
+              - source: salt://nginx/files/tls-settings.conf
+        - |
+          # Recommended pattern: split running and enabled into separate states
+          # so that changes to enabled do not prevent mod_watch from triggering.
+          enable-httpd:
+            service.enabled:
+              - name: httpd
+
+          start-httpd:
+            service.running:
+              - name: httpd
+              - watch:
+                - file: httpd-config
+        - |
+          restart-apache2:
+            service.running:
+              - name: apache2
+              - listen:
+                - file: /etc/apache2/apache2.conf
+
+    - name: enabled
+      description: >-
+        Ensure that a service is enabled to start at boot, without
+        managing its current running state. It is recommended to split
+        service.running and service.enabled into separate states so that
+        changes to the enabled state do not prevent mod_watch from
+        triggering on the running state.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the service to enable at boot."
+          default_value: ~
+      examples:
+        - |
+          enable-httpd:
+            service.enabled:
+              - name: httpd
+
+    - name: disabled
+      description: >-
+        Ensure that a service is disabled and will not start at boot,
+        without managing its current running state.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the service to disable at boot."
+          default_value: ~
+      examples:
+        - |
+          disable-telnet:
+            service.disabled:
+              - name: telnet
+
+    - name: dead
+      description: >-
+        Ensure that a service is not running. If the service is running,
+        it will be stopped.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the service to ensure is stopped."
+          default_value: ~
+        - name: enable
+          type: bool
+          required: false
+          description: >-
+            Set the service boot state. False disables it at boot.
+            If not specified, the boot state is not managed.
+          default_value: ~
+      examples:
+        - |
+          stop-unwanted-service:
+            service.dead:
+              - name: avahi-daemon
+              - enable: False

@@ -1,0 +1,98 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: mount
+  description: >-
+    Filesystem mount management states. Allows managing mount points on
+    minions — mounting filesystems, ensuring they are present in /etc/fstab,
+    and unmounting them. Commonly used with the onfail requisite to set up
+    fallback mounts when a primary mount fails.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.mount.html"
+  functions:
+
+    - name: mounted
+      description: >-
+        Ensure that a filesystem is mounted at the given mount point.
+        If the mount point does not exist or the filesystem is not mounted,
+        Salt will mount it. Optionally manages the /etc/fstab entry.
+        A typical use-case with onfail is to mount a backup share only if
+        the primary mount fails.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the mount point on the minion."
+          default_value: ~
+        - name: device
+          type: string
+          required: true
+          description: >-
+            Device, remote share, or UUID to mount
+            (e.g. "/dev/sdb1", "10.0.0.45:/share", "UUID=...").
+          default_value: ~
+        - name: fstype
+          type: string
+          required: true
+          description: >-
+            Filesystem type (e.g. "ext4", "nfs", "tmpfs", "xfs").
+          default_value: ~
+        - name: opts
+          type: list
+          required: false
+          description: >-
+            List of mount options to pass to the mount command
+            (e.g. ["defaults", "ro", "noexec"]).
+          default_value: ~
+        - name: dump
+          type: int
+          required: false
+          description: "fstab dump field value (0 or 1)."
+          default_value: "0"
+        - name: pass_num
+          type: int
+          required: false
+          description: "fstab pass field value for fsck ordering."
+          default_value: "0"
+        - name: persist
+          type: bool
+          required: false
+          description: "If True, add or update the entry in /etc/fstab."
+          default_value: "true"
+      examples:
+        - |
+          primary_mount:
+            mount.mounted:
+              - name: /mnt/share
+              - device: 10.0.0.45:/share
+              - fstype: nfs
+
+          backup_mount:
+            mount.mounted:
+              - name: /mnt/share
+              - device: 192.168.40.34:/share
+              - fstype: nfs
+              - onfail:
+                - mount: primary_mount
+
+    - name: unmounted
+      description: >-
+        Ensure that a filesystem is not mounted at the given mount point.
+        If the filesystem is currently mounted, it will be unmounted.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the mount point to unmount."
+          default_value: ~
+        - name: persist
+          type: bool
+          required: false
+          description: "If True, remove the entry from /etc/fstab as well."
+          default_value: "false"
+      examples:
+        - |
+          unmount_old_share:
+            mount.unmounted:
+              - name: /mnt/old_share
+              - persist: True

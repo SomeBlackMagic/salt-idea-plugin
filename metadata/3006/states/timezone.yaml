@@ -1,0 +1,48 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: timezone
+  description: >-
+    Management of system timezones. Allows setting the system timezone
+    and optionally configuring the hardware clock (RTC) to UTC or
+    localtime. By default the hardware clock is set to localtime
+    (same as the system clock). Setting utc to True makes the hardware
+    clock track UTC while the system clock offsets accordingly.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.timezone.html"
+  functions:
+
+    - name: system
+      description: >-
+        Set the timezone for the system. The hardware clock can optionally
+        be set to UTC (default True). The Ubuntu community documentation
+        contains an explanation of the UTC/localtime distinction relevant
+        for dual-boot systems.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            The timezone name to set (e.g. 'America/Denver', 'Europe/Berlin',
+            'UTC', 'Asia/Tokyo'). Uses the tz database naming convention.
+          default_value: ~
+        - name: utc
+          type: bool
+          required: false
+          description: >-
+            Whether to set the hardware clock (RTC) to UTC. When True,
+            the hardware clock tracks UTC and the system clock is an offset.
+            Default is True.
+          default_value: "true"
+      examples:
+        - |
+          America/Denver:
+            timezone.system
+        - |
+          America/Denver:
+            timezone.system:
+              - utc: True
+        - |
+          Europe/Berlin:
+            timezone.system:
+              - utc: True

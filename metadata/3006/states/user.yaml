@@ -1,0 +1,112 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: user
+  description: >-
+    User account management states. Allows creating and managing user
+    accounts on minions. Note: execution module functions such as
+    user.rename cannot be called directly as states — use module.run
+    to call execution modules from within the state system.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.user.html"
+  functions:
+
+    - name: present
+      description: >-
+        Ensure that a user account exists with the specified attributes.
+        If the user does not exist, it is created. If it exists but
+        attributes differ, they are updated. When using the unless or
+        onlyif requisites with a shell set to /sbin/nologin, use
+        cmd_opts_exclude to prevent that shell from being passed to
+        cmd.retcode.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Username of the account to manage."
+          default_value: ~
+        - name: uid
+          type: int
+          required: false
+          description: "Numeric user ID (UID) to assign to the account."
+          default_value: ~
+        - name: gid
+          type: int
+          required: false
+          description: "Numeric primary group ID (GID) for the account."
+          default_value: ~
+        - name: groups
+          type: list
+          required: false
+          description: "List of supplementary groups the user should belong to."
+          default_value: ~
+        - name: home
+          type: string
+          required: false
+          description: "Home directory path for the user."
+          default_value: ~
+        - name: shell
+          type: string
+          required: false
+          description: >-
+            Login shell for the user (e.g. "/bin/bash", "/sbin/nologin").
+            When set to /sbin/nologin and used with unless/onlyif, add
+            cmd_opts_exclude: [shell] to prevent the shell from being
+            passed to cmd.retcode.
+          default_value: ~
+        - name: password
+          type: string
+          required: false
+          description: >-
+            Hashed password string for the user. Use the grains or pillar
+            system to avoid storing plaintext passwords in states.
+          default_value: ~
+        - name: createhome
+          type: bool
+          required: false
+          description: "If True, create the home directory if it does not exist."
+          default_value: "true"
+      examples:
+        - |
+          jim_nologin:
+            user.present:
+              - name: jim
+              - shell: /sbin/nologin
+              - unless:
+                - echo hello world
+              - cmd_opts_exclude:
+                - shell
+        - |
+          webuser:
+            user.present:
+              - name: www-data
+              - shell: /usr/sbin/nologin
+              - groups:
+                - www-data
+
+    - name: absent
+      description: >-
+        Ensure that a user account does not exist. If the user exists,
+        it is removed.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Username of the account to remove."
+          default_value: ~
+        - name: purge
+          type: bool
+          required: false
+          description: "If True, remove the user's home directory as well."
+          default_value: "false"
+        - name: force
+          type: bool
+          required: false
+          description: "If True, force removal even if the user is logged in."
+          default_value: "false"
+      examples:
+        - |
+          remove_old_user:
+            user.absent:
+              - name: olduser
+              - purge: True

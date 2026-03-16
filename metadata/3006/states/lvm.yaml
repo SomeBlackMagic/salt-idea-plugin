@@ -1,0 +1,175 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: lvm
+  description: >-
+    Management of Linux Logical Volume Manager (LVM). Provides states
+    for managing Physical Volumes (PV), Volume Groups (VG), and Logical
+    Volumes (LV). Typical usage order: pv_present → vg_present → lv_present.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.lvm.html"
+  functions:
+
+    - name: pv_present
+      description: >-
+        Set a physical device to be used as an LVM Physical Volume.
+        Initialises the device with pvcreate if not already a PV.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The device name to initialise as a Physical Volume (e.g. '/dev/sda')."
+          default_value: ~
+      examples:
+        - |
+          /dev/sda:
+            lvm.pv_present
+
+    - name: pv_absent
+      description: >-
+        Ensure a physical device is not being used as an LVM Physical
+        Volume. Removes the PV metadata from the device.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The device name to remove as a Physical Volume."
+          default_value: ~
+      examples:
+        - |
+          /dev/sdb:
+            lvm.pv_absent
+
+    - name: vg_present
+      description: >-
+        Ensure an LVM Volume Group exists. Creates the VG if absent,
+        adding the specified devices as Physical Volumes.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The Volume Group name to create."
+          default_value: ~
+        - name: devices
+          type: list
+          required: false
+          description: >-
+            A list of devices (Physical Volumes) to add to the Volume
+            Group (e.g. ['/dev/sda', '/dev/sdb']).
+          default_value: ~
+      examples:
+        - |
+          my_vg:
+            lvm.vg_present:
+              - devices: /dev/sda
+
+    - name: vg_absent
+      description: >-
+        Ensure an LVM Volume Group does not exist. Removes the VG if present.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The Volume Group name to remove."
+          default_value: ~
+      examples:
+        - |
+          my_vg:
+            lvm.vg_absent
+
+    - name: lv_present
+      description: >-
+        Ensure a Logical Volume is present, creating it if absent.
+        Supports thin volumes, thin pools, snapshots, and filesystem
+        resizing. Added thinvolume/thinpool in 2016.11.0, force in 3002,
+        resizefs in 3002.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The name of the Logical Volume."
+          default_value: ~
+        - name: vgname
+          type: string
+          required: false
+          description: "The Volume Group on which the Logical Volume resides."
+          default_value: ~
+        - name: size
+          type: string
+          required: false
+          description: >-
+            Size of the Logical Volume. Use a suffix: S (512B sectors),
+            M (megabytes), G (gigabytes), T (terabytes). Case insensitive.
+          default_value: ~
+        - name: extents
+          type: string
+          required: false
+          description: >-
+            Number of logical extents or a percentage (e.g. '100%FREE').
+            Sets initial size and is not resized afterwards.
+          default_value: ~
+        - name: snapshot
+          type: string
+          required: false
+          description: "Name of the snapshot to create."
+          default_value: ~
+        - name: pv
+          type: string
+          required: false
+          description: "The Physical Volume to use for this LV."
+          default_value: ~
+        - name: thinvolume
+          type: bool
+          required: false
+          description: "If True, the Logical Volume is thinly provisioned. Added in 2016.11.0."
+          default_value: "false"
+        - name: thinpool
+          type: bool
+          required: false
+          description: "If True, the Logical Volume is a thin pool. Added in 2016.11.0."
+          default_value: "false"
+        - name: force
+          type: bool
+          required: false
+          description: "If True, assume yes to all prompts. Added in 3002."
+          default_value: "false"
+        - name: resizefs
+          type: bool
+          required: false
+          description: "If True, use fsadm to resize the filesystem if needed. Added in 3002."
+          default_value: "false"
+      examples:
+        - |
+          /dev/sda:
+            lvm.pv_present
+
+          my_vg:
+            lvm.vg_present:
+              - devices: /dev/sda
+
+          lvroot:
+            lvm.lv_present:
+              - vgname: my_vg
+              - size: 10G
+              - stripes: 5
+              - stripesize: 8K
+
+    - name: lv_absent
+      description: >-
+        Remove a Logical Volume from a named Volume Group.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The Logical Volume to remove."
+          default_value: ~
+        - name: vgname
+          type: string
+          required: false
+          description: "The Volume Group on which the Logical Volume resides."
+          default_value: ~
+      examples:
+        - |
+          lvroot:
+            lvm.lv_absent:
+              - vgname: my_vg

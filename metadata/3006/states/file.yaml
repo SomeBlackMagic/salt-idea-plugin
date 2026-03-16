@@ -1,0 +1,259 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: file
+  description: >-
+    File management states. Provides functions to manage files, directories,
+    and their contents on minions — creating, modifying, synchronising from
+    the Salt file server, and verifying existence.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.file.html"
+  functions:
+
+    - name: managed
+      description: >-
+        Ensure that a file exists and its contents match a given source or
+        inline content. The source can be a salt:// URI pointing to a file
+        on the Salt master's file server. Supports Jinja and other template
+        engines. Commonly used with the watch requisite so that services are
+        reloaded when a managed config file changes.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file to manage on the minion."
+          default_value: ~
+        - name: source
+          type: string
+          required: false
+          description: >-
+            URI of the source file. Supports salt:// (file server),
+            http://, https://, and ftp:// URIs.
+          default_value: ~
+        - name: template
+          type: string
+          required: false
+          description: >-
+            Template engine to use when rendering the source file
+            (e.g. "jinja"). Allows use of pillar and grain data in
+            file contents.
+          default_value: ~
+        - name: contents
+          type: string
+          required: false
+          description: >-
+            Inline string to use as the file contents instead of a
+            source URI.
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "User owner of the file."
+          default_value: ~
+        - name: group
+          type: string
+          required: false
+          description: "Group owner of the file."
+          default_value: ~
+        - name: mode
+          type: string
+          required: false
+          description: >-
+            Permissions mode of the file as an octal string
+            (e.g. "755", "644").
+          default_value: ~
+        - name: mkdirs
+          type: bool
+          required: false
+          description: >-
+            If True, create any missing parent directories before
+            creating the file.
+          default_value: "false"
+      examples:
+        - |
+          /etc/foo.conf:
+            file.managed:
+              - source: salt://foo.conf
+              - template: jinja
+              - mkdirs: True
+              - user: apache
+              - group: apache
+              - mode: 755
+        - |
+          /etc/nginx/conf.d/tls-settings.conf:
+            file.managed:
+              - source: salt://nginx/files/tls-settings.conf
+        - |
+          /etc/ntp.conf:
+            file.managed:
+              - source: salt://ntp/files/ntp.conf
+        - |
+          configure-apache2:
+            file.managed:
+              - name: /etc/apache2/apache2.conf
+              - source: salt://apache2/apache2.conf
+              - listen_in:
+                - service: apache2
+
+    - name: recurse
+      description: >-
+        Ensure that a directory and its contents are synchronised from
+        a source on the Salt file server. Recursively copies files from
+        the source directory to the target directory on the minion.
+        Used with the prereq requisite to detect when files will change
+        before applying them.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the target directory on the minion."
+          default_value: ~
+        - name: source
+          type: string
+          required: true
+          description: >-
+            salt:// URI of the source directory on the Salt master's
+            file server.
+          default_value: ~
+        - name: template
+          type: string
+          required: false
+          description: "Template engine to use when rendering source files."
+          default_value: ~
+        - name: include_empty
+          type: bool
+          required: false
+          description: "If True, include empty directories in the sync."
+          default_value: "false"
+      examples:
+        - |
+          site-code:
+            file.recurse:
+              - name: /opt/site_code
+              - source: salt://site/code
+        - |
+          # Used with prereq: graceful-down runs first if site-code expects changes
+          graceful-down:
+            cmd.run:
+              - name: service apache graceful
+              - prereq:
+                - file: site-code
+
+          site-code:
+            file.recurse:
+              - name: /opt/site_code
+              - source: salt://site/code
+
+    - name: replace
+      description: >-
+        Replace occurrences of a pattern in a file using a regular
+        expression. The check_cmd option can be used to verify the
+        replacement was applied correctly. Note: check_cmd here functions
+        differently from the global check_cmd state argument.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file to modify."
+          default_value: ~
+        - name: pattern
+          type: string
+          required: true
+          description: "Regular expression pattern to search for in the file."
+          default_value: ~
+        - name: repl
+          type: string
+          required: true
+          description: "Replacement string for each match of the pattern."
+          default_value: ~
+        - name: flags
+          type: list
+          required: false
+          description: >-
+            List of Python regex flags to apply
+            (e.g. ["IGNORECASE", "MULTILINE"]).
+          default_value: ~
+        - name: count
+          type: int
+          required: false
+          description: >-
+            Maximum number of replacements to make. 0 means replace all.
+          default_value: "0"
+      examples:
+        - |
+          comment-repo:
+            file.replace:
+              - name: /etc/yum.repos.d/fedora.repo
+              - pattern: '^enabled=0'
+              - repl: enabled=1
+              - check_cmd:
+                - "! grep 'enabled=0' /etc/yum.repos.d/fedora.repo"
+
+    - name: touch
+      description: >-
+        Ensure that a file exists. If the file does not exist, it is
+        created as an empty file. If it already exists, its access and
+        modification times are updated. Often used with the creates
+        conditional state argument.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file to touch."
+          default_value: ~
+        - name: atime
+          type: string
+          required: false
+          description: >-
+            Set the access time to this value instead of the current time.
+          default_value: ~
+        - name: mtime
+          type: string
+          required: false
+          description: >-
+            Set the modification time to this value instead of the
+            current time.
+          default_value: ~
+      examples:
+        - |
+          contrived creates example:
+            file.touch:
+              - name: /path/to/file
+              - creates: /path/to/file
+        - |
+          arbitrary file example:
+            file.touch:
+              - name: /path/to/file
+              - onlyif:
+                - fun: file.search
+                  args:
+                    - /etc/crontab
+                    - 'entry1'
+
+    - name: exists
+      description: >-
+        Ensure that a file or directory exists. The state fails if the
+        path does not exist. Commonly used with the retry state option
+        to wait for a file to appear.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path that must exist on the minion."
+          default_value: ~
+      examples:
+        - |
+          wait_for_file:
+            file.exists:
+              - name: /path/to/file
+              - retry:
+                  attempts: 15
+                  interval: 30
+        - |
+          wait_for_file:
+            file.exists:
+              - name: /path/to/file
+              - retry:
+                  attempts: 10
+                  interval: 2
+                  splay: 5

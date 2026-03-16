@@ -1,0 +1,416 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: git
+  description: >-
+    States to manage git repositories and git configuration.
+    Requires git 1.6.5 or newer (changed in version 2015.8.8).
+    Before using git over SSH, ensure the remote host fingerprint
+    exists in ~/.ssh/known_hosts.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.git.html"
+  functions:
+
+    - name: latest
+      description: >-
+        Ensure the repository is cloned to the given target directory
+        and is up-to-date. If the repository does not exist, it is
+        cloned. If it exists, it is fetched and updated to the specified
+        rev. Supports SSH (via identity), HTTPS Basic Auth, and
+        anonymous access.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            Address of the remote repository as passed to 'git clone'.
+            Supports https://, ssh://, and SCP-like syntax
+            (user@server:project.git).
+          default_value: ~
+        - name: target
+          type: string
+          required: true
+          description: "Absolute path of the target directory to clone into."
+          default_value: ~
+        - name: rev
+          type: string
+          required: false
+          description: >-
+            The remote branch, tag, or revision ID to checkout. Defaults
+            to HEAD (the remote repository's default branch).
+          default_value: "HEAD"
+        - name: branch
+          type: string
+          required: false
+          description: >-
+            Name of the local branch to checkout into. If not specified,
+            Salt does not manage the local branch name. Added in 2015.8.0.
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: >-
+            Local system user under which to run git commands. Not to be
+            confused with HTTP/SSH authentication username. Added in 0.17.0.
+          default_value: ~
+        - name: password
+          type: string
+          required: false
+          description: "Windows only. Required when specifying user. Added in 2016.3.4."
+          default_value: ~
+        - name: identity
+          type: string
+          required: false
+          description: >-
+            Path to a private key (or list of paths) for SSH authentication.
+            Can be a local path or a salt:// URI. Keys must be passphraseless
+            unless invoked via salt-call.
+          default_value: ~
+        - name: https_user
+          type: string
+          required: false
+          description: "HTTP Basic Auth username for HTTPS clones. Added in 2015.5.0."
+          default_value: ~
+        - name: https_pass
+          type: string
+          required: false
+          description: "HTTP Basic Auth password for HTTPS clones. Added in 2015.5.0."
+          default_value: ~
+        - name: force_clone
+          type: bool
+          required: false
+          description: >-
+            If True and target directory exists but is not a git repo,
+            remove its contents and clone into it.
+          default_value: "false"
+        - name: force_checkout
+          type: bool
+          required: false
+          description: "If True, discard unwritten changes when checking out."
+          default_value: "false"
+        - name: force_reset
+          type: bool
+          required: false
+          description: >-
+            If True, force a hard-reset to the remote revision when the
+            update is not a fast-forward. Can also be set to
+            'remote-changes' (added in 2019.2.0).
+          default_value: "false"
+        - name: force_fetch
+          type: bool
+          required: false
+          description: "If True, force the fetch even for non-fast-forward updates. Added in 2015.8.0."
+          default_value: "false"
+        - name: submodules
+          type: bool
+          required: false
+          description: "If True, update submodules on clone or branch change."
+          default_value: "false"
+        - name: depth
+          type: int
+          required: false
+          description: >-
+            Shallow clone depth. Useful for repos with long history
+            (e.g. depth: 1). Not compatible with revision IDs.
+          default_value: ~
+        - name: remote
+          type: string
+          required: false
+          description: "Git remote name to use. Defaults to 'origin'."
+          default_value: "origin"
+        - name: fetch_tags
+          type: bool
+          required: false
+          description: "If True, fetch all tags even those unreachable from any branch."
+          default_value: "true"
+        - name: update_head
+          type: bool
+          required: false
+          description: >-
+            If False, fetch is performed but no changes are made to the
+            local HEAD. Added in 2015.8.3.
+          default_value: "true"
+      examples:
+        - |
+          git@github.com:user/repo.git:
+            git.latest:
+              - user: deployer
+              - identity: /home/deployer/.ssh/id_rsa
+        - |
+          foo_app:
+            git.latest:
+              - name: https://mydomain.tld/apps/foo.git
+              - target: /var/www/foo
+              - user: www
+        - |
+          foo_app:
+            git.latest:
+              - name: https://mydomain.tld/apps/foo.git
+              - target: /var/www/foo
+              - user: www
+              - rev: dev
+              - branch: dev
+              - force_reset: True
+        - |
+          git-website-staging:
+            git.latest:
+              - name: git@gitlab.example.com:user/website.git
+              - rev: gh-pages
+              - target: /usr/share/nginx/staging
+              - identity: /root/.ssh/website_id_rsa
+              - require:
+                - pkg: git
+                - ssh_known_hosts: gitlab.example.com
+
+    - name: cloned
+      description: >-
+        Ensure a repository has been cloned to the specified target
+        directory. If not, clone it. No fetches are performed once
+        cloned (unlike git.latest). Added in version 2018.3.3 / 2019.2.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Address of the remote repository."
+          default_value: ~
+        - name: target
+          type: string
+          required: true
+          description: "Absolute path of the target directory."
+          default_value: ~
+        - name: branch
+          type: string
+          required: false
+          description: >-
+            Remote branch to check out. If unspecified, the default branch
+            (remote HEAD) is checked out.
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "User under which to run git commands."
+          default_value: ~
+        - name: identity
+          type: string
+          required: false
+          description: "Path to a private key for SSH authentication."
+          default_value: ~
+        - name: https_user
+          type: string
+          required: false
+          description: "HTTP Basic Auth username for HTTPS clones."
+          default_value: ~
+        - name: https_pass
+          type: string
+          required: false
+          description: "HTTP Basic Auth password for HTTPS clones."
+          default_value: ~
+      examples:
+        - |
+          git@github.com:user/repo.git:
+            git.cloned:
+              - target: /srv/myrepo
+              - branch: main
+              - user: deployer
+
+    - name: detached
+      description: >-
+        Ensure a repository is cloned to the given target directory and
+        is a detached HEAD checkout of the commit resolved from rev.
+        Added in version 2016.3.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Address of the remote repository."
+          default_value: ~
+        - name: rev
+          type: string
+          required: true
+          description: "Branch, tag, or commit ID to checkout as detached HEAD."
+          default_value: ~
+        - name: target
+          type: string
+          required: true
+          description: "Absolute path of the target directory."
+          default_value: ~
+        - name: remote
+          type: string
+          required: false
+          description: "Git remote name. Defaults to 'origin'."
+          default_value: "origin"
+        - name: user
+          type: string
+          required: false
+          description: "User under which to run git commands."
+          default_value: ~
+        - name: force_clone
+          type: bool
+          required: false
+          description: "Remove target contents and clone if target is not a git repo."
+          default_value: "false"
+        - name: force_checkout
+          type: bool
+          required: false
+          description: "Discard unwritten changes when checking out."
+          default_value: "false"
+        - name: hard_reset
+          type: bool
+          required: false
+          description: >-
+            If True, perform a hard reset before checkout discarding
+            uncommitted changes. Untracked files remain. Note: hard reset
+            changes do not trigger requisites.
+          default_value: "false"
+        - name: submodules
+          type: bool
+          required: false
+          description: "Update submodules after checkout."
+          default_value: "false"
+      examples:
+        - |
+          myrepo_pinned:
+            git.detached:
+              - name: https://github.com/user/repo.git
+              - rev: v1.2.3
+              - target: /srv/myrepo
+
+    - name: present
+      description: >-
+        Ensure that a git repository exists in the given directory.
+        Initialises a new repository if absent. By default initialises
+        a bare repository.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path to the directory. (Changed in 2015.8.0: must be absolute.)"
+          default_value: ~
+        - name: force
+          type: bool
+          required: false
+          description: >-
+            If True and name points to a directory that is not a git
+            repository, recursively remove its contents and initialise
+            a new repository.
+          default_value: "false"
+        - name: bare
+          type: bool
+          required: false
+          description: >-
+            If True, initialise a bare repository. Note: defaults to True,
+            which differs from 'git init' behavior. Set to False for a
+            working tree.
+          default_value: "true"
+        - name: user
+          type: string
+          required: false
+          description: "User under which to run git commands. Added in 0.17.0."
+          default_value: ~
+      examples:
+        - |
+          /srv/git/myrepo.git:
+            git.present:
+              - bare: True
+        - |
+          /srv/workdir/myrepo:
+            git.present:
+              - bare: False
+
+    - name: config_set
+      description: >-
+        Ensure that a git config value is set to the desired value(s).
+        Supports both local (per-repo) and global config. Added in
+        version 2014.7.0. Renamed from git.config in 2015.8.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the git config key (e.g. 'user.email', 'user.name')."
+          default_value: ~
+        - name: value
+          type: string
+          required: false
+          description: "Set a single value for the config key."
+          default_value: ~
+        - name: multivar
+          type: list
+          required: false
+          description: >-
+            Set multiple values for the config key. Order matters —
+            different order causes removal and replacement. Added in 2015.8.0.
+          default_value: ~
+        - name: repo
+          type: string
+          required: false
+          description: >-
+            Path to the git repository. Required unless global is True.
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "User under which to run git commands."
+          default_value: ~
+      examples:
+        - |
+          mylocalrepo:
+            git.config_set:
+              - name: user.email
+              - value: foo@bar.net
+              - repo: /path/to/repo
+        - |
+          mylocalrepo:
+            git.config_set:
+              - name: mysection.myattribute
+              - multivar:
+                - foo
+                - bar
+                - baz
+              - repo: /path/to/repo
+        - |
+          mylocalrepo:
+            git.config_set:
+              - name: user.name
+              - value: Foo Bar
+              - user: foo
+              - global: True
+
+    - name: config_unset
+      description: >-
+        Ensure that the named git config key is not present. Supports
+        regex for key names and value matching. Added in version 2015.8.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            The git config key to unset. Can be a regex that must match
+            the entire key name.
+          default_value: ~
+        - name: value_regex
+          type: string
+          required: false
+          description: "Regex indicating the values to unset for the matching key(s)."
+          default_value: ~
+        - name: repo
+          type: string
+          required: false
+          description: "Path to the git repository. Required unless global is True."
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "User under which to run git commands."
+          default_value: ~
+      examples:
+        - |
+          mylocalrepo:
+            git.config_unset:
+              - name: foo.bar
+              - value_regex: 'baz'
+              - repo: /path/to/repo
+        - |
+          mylocalrepo:
+            git.config_unset:
+              - name: foo.bar
+              - global: True

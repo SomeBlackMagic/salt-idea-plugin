@@ -1,0 +1,338 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: nftables
+  description: >-
+    Management of nftables Linux firewall rules. An nftables-specific
+    module to manage Linux firewalls. Like iptables, '--state' is
+    specified as 'connstate'. All other nftables long options are passed
+    as-is.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.nftables.html"
+  functions:
+
+    - name: append
+      description: >-
+        Append a rule to a chain. Added in version 0.17.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A user-defined name for this rule. Should not be an actual rule."
+          default_value: ~
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+        - name: table
+          type: string
+          required: false
+          description: "The nftables table."
+          default_value: "filter"
+        - name: chain
+          type: string
+          required: false
+          description: "The chain to append to."
+          default_value: ~
+        - name: jump
+          type: string
+          required: false
+          description: "The jump target (e.g. 'accept', 'drop')."
+          default_value: ~
+        - name: connstate
+          type: string
+          required: false
+          description: "Connection state to match (used instead of '--state')."
+          default_value: ~
+        - name: dport
+          type: string
+          required: false
+          description: "Destination port or range."
+          default_value: ~
+        - name: proto
+          type: string
+          required: false
+          description: "Protocol to match (e.g. 'tcp', 'udp')."
+          default_value: ~
+        - name: sport
+          type: string
+          required: false
+          description: "Source port or range."
+          default_value: ~
+        - name: save
+          type: bool
+          required: false
+          description: "If True, save nftables rules to the persistence file."
+          default_value: "false"
+      examples:
+        - |
+          httpd:
+            nftables.append:
+              - table: filter
+              - chain: input
+              - jump: accept
+              - match: state
+              - connstate: new
+              - dport: 80
+              - proto: tcp
+              - sport: 1025:65535
+              - save: True
+
+    - name: insert
+      description: >-
+        Insert a rule into a chain at a specified position. Added in version 2014.7.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A user-defined name for this rule."
+          default_value: ~
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+        - name: position
+          type: int
+          required: false
+          description: "The position at which to insert the rule."
+          default_value: ~
+        - name: save
+          type: bool
+          required: false
+          description: "If True, save nftables rules to the persistence file."
+          default_value: "false"
+      examples:
+        - |
+          httpd:
+            nftables.insert:
+              - position: 1
+              - table: filter
+              - chain: INPUT
+              - jump: ACCEPT
+              - match: state
+              - connstate: NEW
+              - dport: 80
+              - proto: tcp
+              - sport: 1025:65535
+              - save: True
+
+    - name: delete
+      description: >-
+        Delete a rule from a chain. Can delete by rule spec or position.
+        Added in version 2014.7.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A user-defined name for this rule."
+          default_value: ~
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+        - name: position
+          type: int
+          required: false
+          description: "Position of the rule to delete."
+          default_value: ~
+        - name: save
+          type: bool
+          required: false
+          description: "If True, save nftables rules to the persistence file."
+          default_value: "false"
+      examples:
+        - |
+          httpd:
+            nftables.delete:
+              - table: filter
+              - chain: INPUT
+              - jump: ACCEPT
+              - match: state
+              - connstate: NEW
+              - dport: 80
+              - proto: tcp
+              - sport: 1025:65535
+              - save: True
+
+    - name: chain_present
+      description: >-
+        Ensure a chain exists in the specified table. Added in version 2014.7.0.
+        Changed in version 3002.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A user-defined chain name."
+          default_value: ~
+        - name: table
+          type: string
+          required: false
+          description: "The table to own the chain."
+          default_value: "filter"
+        - name: table_type
+          type: string
+          required: false
+          description: "The type of the nftables table."
+          default_value: ~
+        - name: hook
+          type: string
+          required: false
+          description: "The hook for the chain."
+          default_value: ~
+        - name: priority
+          type: int
+          required: false
+          description: "The priority of the chain."
+          default_value: ~
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+      examples:
+        - |
+          output:
+            nftables.chain_present:
+              - family: ip
+              - table: filter
+
+    - name: chain_absent
+      description: >-
+        Ensure a chain does not exist. Added in version 2014.7.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The chain to remove."
+          default_value: ~
+        - name: table
+          type: string
+          required: false
+          description: "The table owning the chain."
+          default_value: "filter"
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+      examples:
+        - |
+          output:
+            nftables.chain_absent:
+              - family: ip
+              - table: filter
+
+    - name: table_present
+      description: >-
+        Ensure an nftables table is present. Added in version 3002.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A user-defined table name."
+          default_value: ~
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+      examples:
+        - |
+          filter:
+            nftables.table_present:
+              - family: ipv4
+
+    - name: table_absent
+      description: >-
+        Ensure an nftables table is absent. Added in version 3002.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the table to ensure is absent."
+          default_value: ~
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+      examples:
+        - |
+          filter:
+            nftables.table_absent:
+              - family: ipv4
+
+    - name: set_policy
+      description: >-
+        Set the default policy for nftables chains. Added in version 3002.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The chain to set the policy on."
+          default_value: ~
+        - name: table
+          type: string
+          required: false
+          description: "The table that owns the chain."
+          default_value: "filter"
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+        - name: policy
+          type: string
+          required: false
+          description: "The policy to set: 'accept' or 'drop'."
+          default_value: ~
+        - name: save
+          type: bool
+          required: false
+          description: "If True, save the in-memory nftables settings to a file."
+          default_value: "false"
+        - name: save_filename
+          type: string
+          required: false
+          description: >-
+            Filename to save nftables settings. Defaults to /etc/nftables
+            or /etc/nftables/salt-all-in-one.nft if the former is a directory.
+          default_value: ~
+      examples:
+        - |
+          drop_input:
+            nftables.set_policy:
+              - table: filter
+              - family: ipv4
+              - policy: drop
+              - save: True
+
+    - name: flush
+      description: >-
+        Flush current nftables state. Added in version 2014.7.0. Changed in 3002.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "A user-defined name for this flush operation."
+          default_value: ~
+        - name: family
+          type: string
+          required: false
+          description: "Network family: 'ipv4' or 'ipv6'."
+          default_value: "ipv4"
+        - name: ignore_absence
+          type: bool
+          required: false
+          description: >-
+            If True, attempts to flush a non-existent table will not result
+            in a failed state. Added in version 3002.
+          default_value: "false"
+      examples:
+        - |
+          flush_filter:
+            nftables.flush:
+              - family: ipv4

@@ -1,0 +1,68 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: ethtool
+  description: >-
+    Management of network interface settings via ethtool. Allows
+    configuring network interface features, ring buffer sizes, coalesce
+    settings, and pause parameters. Requires ethtool to be installed.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.ethtool.html"
+  functions:
+
+    - name: present
+      description: >-
+        Ensure ethtool settings are applied to a network interface.
+        Manages interface features (e.g. offloading), ring buffer sizes,
+        coalesce settings, and pause parameters.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the network interface (e.g. 'eth0', 'ens3')."
+          default_value: ~
+        - name: coalesce
+          type: dict
+          required: false
+          description: >-
+            Coalesce settings as key-value pairs (e.g.
+            {rx-usecs: 100, tx-usecs: 100}).
+          default_value: ~
+        - name: ring
+          type: dict
+          required: false
+          description: >-
+            Ring buffer settings as key-value pairs (e.g.
+            {rx: 512, tx: 512}).
+          default_value: ~
+        - name: features
+          type: dict
+          required: false
+          description: >-
+            Feature settings as key-value pairs where values are
+            'on' or 'off' (e.g. {tx-checksumming: on, rx-checksumming: on,
+            scatter-gather: off}).
+          default_value: ~
+        - name: pause
+          type: dict
+          required: false
+          description: >-
+            Pause parameter settings as key-value pairs (e.g.
+            {autoneg: on, rx: off, tx: off}).
+          default_value: ~
+      examples:
+        - |
+          eth0_settings:
+            ethtool.present:
+              - name: eth0
+              - features:
+                  tx-checksumming: on
+                  rx-checksumming: on
+                  scatter-gather: off
+        - |
+          eth0_ring:
+            ethtool.present:
+              - name: eth0
+              - ring:
+                  rx: 512
+                  tx: 512

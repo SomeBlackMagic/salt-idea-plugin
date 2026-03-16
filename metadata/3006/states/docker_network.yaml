@@ -1,0 +1,68 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: docker_network
+  description: >-
+    Management of Docker networks. Allows creating and removing Docker
+    networks on minions. Requires Docker to be installed.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.docker_network.html"
+  functions:
+
+    - name: present
+      description: >-
+        Ensure a Docker network exists. If the network does not exist,
+        it is created with the specified driver and options.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the Docker network."
+          default_value: ~
+        - name: driver
+          type: string
+          required: false
+          description: "Network driver to use (e.g. 'bridge', 'overlay', 'host', 'macvlan')."
+          default_value: "bridge"
+        - name: driver_opts
+          type: dict
+          required: false
+          description: "Driver-specific options as key-value pairs."
+          default_value: ~
+        - name: enable_ipv6
+          type: bool
+          required: false
+          description: "If True, enable IPv6 on the network."
+          default_value: "false"
+        - name: internal
+          type: bool
+          required: false
+          description: "If True, restrict external access to the network."
+          default_value: "false"
+        - name: labels
+          type: list
+          required: false
+          description: "List of labels to apply to the network."
+          default_value: ~
+      examples:
+        - |
+          myapp_network:
+            docker_network.present:
+              - name: myapp_net
+              - driver: bridge
+
+    - name: absent
+      description: >-
+        Ensure a Docker network does not exist. If the network exists,
+        it is removed. Fails if containers are connected to the network.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the Docker network to remove."
+          default_value: ~
+      examples:
+        - |
+          remove_old_network:
+            docker_network.absent:
+              - name: old_net

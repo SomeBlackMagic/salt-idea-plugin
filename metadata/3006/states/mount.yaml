@@ -59,6 +59,84 @@ module:
           required: false
           description: "If True, add or update the entry in /etc/fstab."
           default_value: "true"
+        - name: mkmnt
+          type: bool
+          required: false
+          description: >-
+            If True, create the mount point directory if it does not exist.
+            If False, the state will fail if the mount point is missing.
+          default_value: "false"
+        - name: config
+          type: string
+          required: false
+          description: "Alternative location for the fstab file."
+          default_value: "/etc/fstab"
+        - name: mount
+          type: bool
+          required: false
+          description: "If True, mount immediately in addition to updating fstab."
+          default_value: "true"
+        - name: user
+          type: string
+          required: false
+          description: "The account used to execute the mount. Defaults to the salt user."
+          default_value: ~
+        - name: match_on
+          type: string
+          required: false
+          description: >-
+            A name or list of fstab properties on which this state should be
+            applied. Default is 'auto', which guesses based on fstype.
+          default_value: "auto"
+        - name: device_name_regex
+          type: list
+          required: false
+          description: >-
+            A list of device names or regex patterns that should not force a
+            remount. Useful for glusterfs or multi-server mounts. Added in 2016.11.0.
+          default_value: ~
+        - name: extra_mount_invisible_options
+          type: list
+          required: false
+          description: >-
+            Extra mount options not visible through /proc/self/mountinfo that
+            should not trigger a remount. Extends the builtin list.
+          default_value: ~
+        - name: extra_mount_invisible_keys
+          type: list
+          required: false
+          description: >-
+            Extra key options not visible through /proc/self/mountinfo.
+            Extends the builtin list. Useful for e.g. password=.
+          default_value: ~
+        - name: extra_mount_ignore_fs_keys
+          type: dict
+          required: false
+          description: >-
+            Dict of filesystem options that should not force a remount.
+            Updates the internal dictionary.
+          default_value: ~
+        - name: extra_mount_translate_options
+          type: dict
+          required: false
+          description: >-
+            Dict of mount options that get translated when mounted. Updates the
+            internal dictionary to prevent unnecessary remounts.
+          default_value: ~
+        - name: hidden_opts
+          type: list
+          required: false
+          description: >-
+            List of mount options that will be ignored when considering a
+            remount. Added in version 2015.8.2.
+          default_value: ~
+        - name: bind_mount_copy_active_opts
+          type: bool
+          required: false
+          description: >-
+            If False, disables the default behavior of copying options from
+            an active bind mount. Added in version 3006.0.
+          default_value: "true"
       examples:
         - |
           primary_mount:
@@ -90,9 +168,154 @@ module:
           required: false
           description: "If True, remove the entry from /etc/fstab as well."
           default_value: "false"
+        - name: device
+          type: string
+          required: false
+          description: >-
+            The device to unmount. Optional because a device may be mounted
+            in multiple places. Added in version 2015.5.0.
+          default_value: ~
+        - name: config
+          type: string
+          required: false
+          description: "Alternative location for the fstab file."
+          default_value: "/etc/fstab"
+        - name: user
+          type: string
+          required: false
+          description: "The user to own the mount. Defaults to the salt user."
+          default_value: ~
       examples:
         - |
           unmount_old_share:
             mount.unmounted:
               - name: /mnt/old_share
               - persist: True
+
+    - name: swap
+      description: >-
+        Activate a swap device and optionally persist it to the fstab.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The swap device or file path to activate (e.g. '/root/swapfile')."
+          default_value: ~
+        - name: persist
+          type: bool
+          required: false
+          description: "If True, add the swap entry to /etc/fstab."
+          default_value: "true"
+        - name: config
+          type: string
+          required: false
+          description: "Alternative location for the fstab file."
+          default_value: "/etc/fstab"
+      examples:
+        - |
+          /root/swapfile:
+            mount.swap
+
+    - name: fstab_present
+      description: >-
+        Ensure a line is present in the fstab. Does not mount the device.
+        Allows adding fstab entries without immediately mounting. Added in
+        version 2016.11.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The name of the block device or filesystem for the fstab entry."
+          default_value: ~
+        - name: fs_file
+          type: string
+          required: true
+          description: "The mount point for the filesystem."
+          default_value: ~
+        - name: fs_vfstype
+          type: string
+          required: true
+          description: "The filesystem type (e.g. 'ext4', 'nfs', 'tmpfs')."
+          default_value: ~
+        - name: fs_mntops
+          type: string
+          required: false
+          description: "Mount options as a comma-separated string."
+          default_value: "defaults"
+        - name: fs_freq
+          type: int
+          required: false
+          description: "fstab dump field value."
+          default_value: "0"
+        - name: fs_passno
+          type: int
+          required: false
+          description: "fstab pass field value for fsck ordering."
+          default_value: "0"
+        - name: mount_by
+          type: string
+          required: false
+          description: "Mount by device name, UUID, or LABEL."
+          default_value: ~
+        - name: config
+          type: string
+          required: false
+          description: "Alternative location for the fstab file."
+          default_value: "/etc/fstab"
+        - name: mount
+          type: bool
+          required: false
+          description: "If True, also mount the device immediately."
+          default_value: "true"
+        - name: match_on
+          type: string
+          required: false
+          description: "fstab properties on which to match existing entries."
+          default_value: "auto"
+        - name: not_change
+          type: bool
+          required: false
+          description: >-
+            If True, do not update an existing fstab entry even if parameters
+            have changed.
+          default_value: "false"
+      examples:
+        - |
+          add_data_fstab:
+            mount.fstab_present:
+              - name: /dev/sdb1
+              - fs_file: /data
+              - fs_vfstype: ext4
+              - fs_mntops: defaults,noatime
+
+    - name: fstab_absent
+      description: >-
+        Ensure a line is absent from the fstab. Does not unmount the device.
+        Added in version 2016.11.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The name of the block device or filesystem to remove from fstab."
+          default_value: ~
+        - name: fs_file
+          type: string
+          required: true
+          description: "The mount point of the fstab entry to remove."
+          default_value: ~
+        - name: mount_by
+          type: string
+          required: false
+          description: "Mount by device name, UUID, or LABEL."
+          default_value: ~
+        - name: config
+          type: string
+          required: false
+          description: "Alternative location for the fstab file."
+          default_value: "/etc/fstab"
+      examples:
+        - |
+          remove_data_fstab:
+            mount.fstab_absent:
+              - name: /dev/sdb1
+              - fs_file: /data

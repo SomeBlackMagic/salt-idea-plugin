@@ -43,6 +43,121 @@ module:
             Update the package database before installing. Equivalent to
             running 'apt-get update' or 'yum makecache'.
           default_value: "false"
+        - name: install_recommends
+          type: bool
+          required: false
+          description: >-
+            Whether to install packages marked as recommended. Default is True.
+            Currently only works with APT-based systems.
+          default_value: "true"
+        - name: only_upgrade
+          type: bool
+          required: false
+          description: >-
+            Only upgrade the package if it is already installed. If the package
+            is not installed, the state will fail. Currently only works with
+            APT-based systems.
+          default_value: "false"
+        - name: fromrepo
+          type: string
+          required: false
+          description: >-
+            Specify a repository from which to install. For APT-based systems,
+            this is the release name (e.g. 'precise'). For YUM/DNF, this limits
+            installation to the specified repo.
+          default_value: ~
+        - name: skip_verify
+          type: bool
+          required: false
+          description: "Skip the GPG verification check for the package to be installed."
+          default_value: "false"
+        - name: skip_suggestions
+          type: bool
+          required: false
+          description: >-
+            Force strict package naming. Disables lookup of package alternatives.
+            Added in version 2014.1.1.
+          default_value: "false"
+        - name: sources
+          type: list
+          required: false
+          description: >-
+            A list of packages to install, along with the source URI or local
+            path from which to install each package. When specified, both
+            'name' and 'pkgs' are ignored.
+          default_value: ~
+        - name: allow_updates
+          type: bool
+          required: false
+          description: >-
+            Allow the package to be updated outside Salt's control (e.g. auto
+            updates on Windows). Means a newer version than latest available
+            in the repo will not be reinstalled. Added in version 2014.7.0.
+          default_value: "false"
+        - name: pkg_verify
+          type: bool
+          required: false
+          description: >-
+            Use pkg.verify to check if already installed packages require
+            reinstallation. Supported for 'yum' and 'zypperpkg' providers.
+            Added in version 2014.7.0.
+          default_value: "false"
+        - name: normalize
+          type: bool
+          required: false
+          description: >-
+            Normalize the package name by removing the architecture if the
+            architecture differs from the OS architecture. Disable for packages
+            that include architecture in their name. Added in version 2014.7.0.
+          default_value: "true"
+        - name: ignore_epoch
+          type: bool
+          required: false
+          description: >-
+            If this option is not explicitly set and there is no epoch in the
+            desired version, the epoch will be implicitly ignored. Set to True
+            to explicitly ignore, False to strictly enforce. Added in 2015.8.9.
+          default_value: ~
+        - name: reinstall
+          type: bool
+          required: false
+          description: >-
+            Specifying reinstall: True always target the package for
+            reinstallation, even if it is already installed at the desired
+            version. Implies pkg_verify. Added in version 2016.11.0.
+          default_value: "false"
+        - name: update_holds
+          type: bool
+          required: false
+          description: >-
+            If True, temporarily unhold packages to allow updating. Otherwise
+            held packages are skipped and the state fails. Supported on
+            YUM/DNF & APT, and Zypper (since 3003). Added in 2016.11.0.
+          default_value: "false"
+        - name: hold
+          type: bool
+          required: false
+          description: >-
+            Force the package to be held at the current installed version.
+            Supported on YUM/DNF & APT (added in 2014.7.0) and Zypper
+            (added in 3003).
+          default_value: ~
+        - name: names
+          type: list
+          required: false
+          description: >-
+            A list of packages to install individually (unlike pkgs which
+            installs all at once). Cannot specify versions. Less efficient
+            than pkgs — prefer pkgs for multiple packages.
+          default_value: ~
+        - name: cache_valid_time
+          type: int
+          required: false
+          description: >-
+            Debian-based systems only. Seconds after which the package cache is
+            considered invalid and a refresh is required. Overrides the
+            refresh parameter behavior. Added in version 2016.11.0.
+          default_value: ~
       examples:
         - |
           install_vim:
@@ -94,6 +209,37 @@ module:
           required: false
           description: "Update the package database before checking for updates."
           default_value: "false"
+        - name: fromrepo
+          type: string
+          required: false
+          description: "Specify a repository from which to install."
+          default_value: ~
+        - name: skip_verify
+          type: bool
+          required: false
+          description: "Skip the GPG verification check for the package."
+          default_value: "false"
+        - name: pkgs
+          type: list
+          required: false
+          description: >-
+            A list of packages to ensure are at their latest versions in a
+            single call.
+          default_value: ~
+        - name: watch_flags
+          type: bool
+          required: false
+          description: >-
+            If True, pass the list of modified packages to mod_watch calls.
+            Added in version 2014.7.0.
+          default_value: "true"
+        - name: cache_valid_time
+          type: int
+          required: false
+          description: >-
+            Debian-based systems only. Seconds after which the package cache is
+            invalid and a refresh is needed. Added in version 2016.11.0.
+          default_value: ~
       examples:
         - |
           install apache on redhat based distros:
@@ -126,6 +272,19 @@ module:
           required: false
           description: "List of packages to remove in a single call."
           default_value: ~
+        - name: normalize
+          type: bool
+          required: false
+          description: >-
+            Normalize the package name by removing the architecture if it
+            differs from the OS architecture. Added in version 2015.8.0.
+          default_value: "true"
+        - name: ignore_epoch
+          type: bool
+          required: false
+          description: >-
+            If True, ignore the epoch when comparing versions. Added in 2015.8.9.
+          default_value: ~
       examples:
         - |
           remove_telnet:
@@ -154,6 +313,19 @@ module:
           type: list
           required: false
           description: "List of packages to purge in a single call."
+          default_value: ~
+        - name: normalize
+          type: bool
+          required: false
+          description: >-
+            Normalize the package name by removing the architecture if it
+            differs from the OS architecture. Added in version 2015.8.0.
+          default_value: "true"
+        - name: ignore_epoch
+          type: bool
+          required: false
+          description: >-
+            If True, ignore the epoch when comparing versions. Added in 2015.8.9.
           default_value: ~
       examples:
         - |
@@ -188,8 +360,217 @@ module:
             Perform a distribution upgrade (e.g. 'apt-get dist-upgrade')
             rather than a standard upgrade. Debian/Ubuntu only.
           default_value: "false"
+        - name: pkgs
+          type: list
+          required: false
+          description: "List of specific packages to upgrade. If not given, all packages are upgraded."
+          default_value: ~
       examples:
         - |
           system_uptodate:
             pkg.uptodate:
               - refresh: True
+
+    - name: downloaded
+      description: >-
+        Ensure that a package is downloaded without installing it. Currently
+        supported for the following pkg providers: yum, zypper, and apt.
+        Added in version 2017.7.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The name of the package to download."
+          default_value: ~
+        - name: version
+          type: string
+          required: false
+          description: "Download a specific version of a package."
+          default_value: ~
+        - name: pkgs
+          type: list
+          required: false
+          description: "A list of packages to download. When specified, name is ignored."
+          default_value: ~
+        - name: fromrepo
+          type: string
+          required: false
+          description: "Specify a repository from which to download."
+          default_value: ~
+        - name: ignore_epoch
+          type: bool
+          required: false
+          description: "If True, ignore the epoch when comparing versions."
+          default_value: ~
+      examples:
+        - |
+          zsh:
+            pkg.downloaded:
+              - version: 5.0.5-4.63
+              - fromrepo: "myrepository"
+
+    - name: group_installed
+      description: >-
+        Ensure that an entire package group is installed. Currently only
+        supported for yum and pacman package managers. Added in version
+        2015.8.0. Support for fromrepo, enablerepo, disablerepo added
+        in 3006.2.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The package group name to install."
+          default_value: ~
+        - name: skip
+          type: list
+          required: false
+          description: >-
+            Packages within the group that should not be installed (default
+            packages that are excluded from installation).
+          default_value: ~
+        - name: include
+          type: list
+          required: false
+          description: >-
+            Optional packages within the group to also install (packages that
+            would not normally be installed by groupinstall).
+          default_value: ~
+        - name: fromrepo
+          type: string
+          required: false
+          description: "Restrict groupinfo to the specified repo(s). Added in 3006.2."
+          default_value: ~
+      examples:
+        - |
+          Load Balancer:
+            pkg.group_installed:
+              - skip:
+                - piranha
+        - |
+          Load Balancer:
+            pkg.group_installed:
+              - include:
+                - haproxy
+
+    - name: held
+      description: >-
+        Set a package in 'hold' state, meaning it will not be changed.
+        Added in version 3005.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The name of the package to hold. Ignored if pkgs is used."
+          default_value: ~
+        - name: version
+          type: string
+          required: false
+          description: >-
+            Hold a specific version. Only meaningful for Zypper-based systems;
+            ignored for YUM/DNF and APT.
+          default_value: ~
+        - name: pkgs
+          type: list
+          required: false
+          description: "A list of packages to hold."
+          default_value: ~
+        - name: replace
+          type: bool
+          required: false
+          description: "Force replacement of existing holds with specified. Default is False."
+          default_value: "false"
+      examples:
+        - |
+          mypkgs:
+            pkg.held:
+              - pkgs:
+                - foo
+                - bar: 1.2.3-4
+                - baz
+
+    - name: unheld
+      description: >-
+        Unset a package from 'hold' state, to allow operations with the
+        package. Added in version 3005.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The name of the package to unhold. Ignored if pkgs is used."
+          default_value: ~
+        - name: version
+          type: string
+          required: false
+          description: >-
+            Unhold a specific version. Only meaningful for Zypper-based
+            systems; ignored for YUM/DNF and APT.
+          default_value: ~
+        - name: pkgs
+          type: list
+          required: false
+          description: "A list of packages to unhold."
+          default_value: ~
+        - name: all
+          type: bool
+          required: false
+          description: "Force removal of all existing locks. Default is False."
+          default_value: "false"
+      examples:
+        - |
+          mypkgs:
+            pkg.unheld:
+              - pkgs:
+                - foo
+                - bar
+
+    - name: patch_installed
+      description: >-
+        Ensure that packages related to certain advisory IDs are installed.
+        Currently supported for yum and zypper. Added in version 2017.7.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Arbitrary state identifier name."
+          default_value: ~
+        - name: advisory_ids
+          type: list
+          required: false
+          description: "List of advisory IDs to install patches for."
+          default_value: ~
+        - name: downloadonly
+          type: bool
+          required: false
+          description: "If True, only download the patch packages without installing."
+          default_value: ~
+      examples:
+        - |
+          issue-foo-fixed:
+            pkg.patch_installed:
+              - advisory_ids:
+                - SUSE-SLE-SERVER-12-SP2-2017-185
+                - SUSE-SLE-SERVER-12-SP2-2017-150
+
+    - name: patch_downloaded
+      description: >-
+        Ensure that packages related to certain advisory IDs are downloaded
+        without installing them. Currently supported for yum and zypper.
+        Added in version 2017.7.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Arbitrary state identifier name."
+          default_value: ~
+        - name: advisory_ids
+          type: list
+          required: false
+          description: "List of advisory IDs to download patches for."
+          default_value: ~
+      examples:
+        - |
+          preparing-to-fix-issues:
+            pkg.patch_downloaded:
+              - advisory_ids:
+                - SUSE-SLE-SERVER-12-SP2-2017-185
+                - SUSE-SLE-SERVER-12-SP2-2017-150

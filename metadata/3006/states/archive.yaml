@@ -70,6 +70,119 @@ module:
           description: >-
             If True, re-extract even if the files are already present.
           default_value: "false"
+        - name: source_hash_name
+          type: string
+          required: false
+          description: >-
+            When source_hash refers to a hash file, use this to specify the
+            exact filename to match, to avoid ambiguous matches. Must be the
+            full filename entry from the checksum file. Added in 2016.11.0.
+          default_value: ~
+        - name: source_hash_update
+          type: bool
+          required: false
+          description: >-
+            If True, extract the archive if source_hash has changed and there
+            is a difference between the archive and local files. Added in 2016.3.0.
+          default_value: "false"
+        - name: skip_files_list_verify
+          type: bool
+          required: false
+          description: >-
+            If True and source_hash has changed, only check archive checksum
+            (not file list) to determine if extraction is needed. Added in 3000.
+          default_value: "false"
+        - name: skip_verify
+          type: bool
+          required: false
+          description: >-
+            If True, skip hash verification of remote file sources. The
+            source_hash argument will be ignored. Added in 2016.3.4.
+          default_value: "false"
+        - name: password
+          type: string
+          required: false
+          description: >-
+            Password for password-protected ZIP archives (only via
+            archive.cmd_unzip).
+          default_value: ~
+        - name: options
+          type: string
+          required: false
+          description: >-
+            Options to pass to the command-line extraction tool. When specified
+            for ZIP files, forces use of archive.cmd_unzip.
+          default_value: ~
+        - name: list_options
+          type: string
+          required: false
+          description: >-
+            Options for listing archive contents (used by archive.list). Only
+            meaningful for tar archives.
+          default_value: ~
+        - name: force
+          type: bool
+          required: false
+          description: >-
+            If True, forcibly extract the archive even if it already exists
+            on the minion.
+          default_value: "false"
+        - name: clean_parent
+          type: bool
+          required: false
+          description: >-
+            If True, remove parent directory of extraction target and all
+            its contents, then re-extract.
+          default_value: "false"
+        - name: trim_output
+          type: bool
+          required: false
+          description: >-
+            If True, only show the first 100 extracted files in the state
+            return. Reduces output for large archives.
+          default_value: "false"
+        - name: use_cmd_unzip
+          type: bool
+          required: false
+          description: >-
+            If True, force use of archive.cmd_unzip for ZIP files. If False,
+            force use of archive.unzip. If unset, Salt chooses automatically.
+          default_value: ~
+        - name: extract_perms
+          type: bool
+          required: false
+          description: >-
+            For ZIP archives: if True, attempt to match extracted file/directory
+            permissions to those defined in the archive. Added in 2016.11.0.
+          default_value: "true"
+        - name: enforce_toplevel
+          type: bool
+          required: false
+          description: >-
+            If True, enforce that the archive has a single top-level directory.
+            If False, allows archives without a single top-level directory.
+          default_value: "true"
+        - name: enforce_ownership_on
+          type: string
+          required: false
+          description: >-
+            Specific path (within the extraction target) to enforce user/group
+            ownership on, rather than all extracted files.
+          default_value: ~
+        - name: archive_format
+          type: string
+          required: false
+          description: >-
+            Manually specify the archive format ('tar', 'zip', or 'rar')
+            instead of auto-detecting from the file extension.
+          default_value: ~
+        - name: use_etag
+          type: bool
+          required: false
+          description: >-
+            If True, use the ETag header from an HTTP/HTTPS source to
+            determine if the archive needs to be re-downloaded.
+          default_value: "false"
       examples:
         - |
           # Match by ID declaration

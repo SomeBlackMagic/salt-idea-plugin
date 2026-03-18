@@ -36,14 +36,74 @@ module:
             False disables it. If not specified, the boot state is not
             managed.
           default_value: ~
+        - name: sig
+          type: string
+          required: false
+          description: >-
+            String to search for in the process list (ps) when determining
+            if the service is running. Useful when the process name differs
+            from the service name.
+          default_value: ~
+        - name: init_delay
+          type: int
+          required: false
+          description: >-
+            Number of seconds to wait after the service starts before returning.
+            Useful when a service is not immediately ready after its init script
+            reports success.
+          default_value: ~
         - name: reload
           type: bool
           required: false
           description: >-
             If True, issues a reload command instead of a restart when
             mod_watch is triggered. Useful for services like nginx where
-            a reload avoids dropping active connections.
+            a reload avoids dropping active connections. The default (False)
+            triggers a full restart on watch.
           default_value: "false"
+        - name: no_block
+          type: bool
+          required: false
+          description: >-
+            Systemd only. Starts the service using --no-block, so Salt does
+            not wait for the service to fully start.
+          default_value: "false"
+        - name: unmask
+          type: bool
+          required: false
+          description: >-
+            Systemd only. If True, remove an indefinite mask before attempting
+            to start the service.
+          default_value: "false"
+        - name: unmask_runtime
+          type: bool
+          required: false
+          description: >-
+            Systemd only. If True, remove a runtime mask before attempting
+            to start the service.
+          default_value: "false"
+        - name: wait
+          type: int
+          required: false
+          description: >-
+            Systemd only. Passed to service.status to determine whether the
+            service is running.
+          default_value: "3"
+        - name: timeout
+          type: int
+          required: false
+          description: >-
+            Windows only. Time in seconds to wait for the service to start
+            before returning.
+          default_value: ~
+        - name: onchanges
+          type: list
+          required: false
+          description: >-
+            Global Salt requisite. The service state will only execute if one
+            of the listed states has changes. Unlike watch, it does not run
+            the state normally — it only runs when the watched state changes.
+          default_value: ~
       examples:
         - |
           nginx:
@@ -139,9 +199,94 @@ module:
             Set the service boot state. False disables it at boot.
             If not specified, the boot state is not managed.
           default_value: ~
+        - name: sig
+          type: string
+          required: false
+          description: >-
+            String to search for in the process list (ps) when determining
+            if the service is running.
+          default_value: ~
+        - name: init_delay
+          type: int
+          required: false
+          description: >-
+            Add a sleep (in seconds) before checking if the service was killed.
+            Added in version 2017.7.0.
+          default_value: ~
+        - name: no_block
+          type: bool
+          required: false
+          description: >-
+            Systemd only. Stops the service using --no-block.
+            Added in version 2017.7.0.
+          default_value: "false"
+        - name: timeout
+          type: int
+          required: false
+          description: "Windows only. Time in seconds to wait for the service to stop."
+          default_value: ~
       examples:
         - |
           stop-unwanted-service:
             service.dead:
               - name: avahi-daemon
               - enable: False
+
+    - name: masked
+      description: >-
+        Ensures that the named service is masked (prevented from being
+        started). Systemd only. Added in version 2017.7.0. Note: a service
+        can have both indefinite and runtime masks; this state manages them
+        independently.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the service to mask."
+          default_value: ~
+        - name: runtime
+          type: bool
+          required: false
+          description: >-
+            If False (default), manage an indefinite mask. If True, manage
+            a runtime mask.
+          default_value: "false"
+      examples:
+        - |
+          mask_foo:
+            service.masked:
+              - name: foo
+        - |
+          mask_runtime_foo:
+            service.masked:
+              - name: foo
+              - runtime: True
+
+    - name: unmasked
+      description: >-
+        Ensures that the named service is unmasked. Systemd only.
+        Added in version 2017.7.0. Manages runtime or indefinite masks
+        independently of each other.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name of the service to unmask."
+          default_value: ~
+        - name: runtime
+          type: bool
+          required: false
+          description: >-
+            If False (default), remove the indefinite mask. If True, remove
+            the runtime mask.
+          default_value: "false"
+      examples:
+        - |
+          unmask_foo:
+            service.unmasked:
+              - name: foo
+        - |
+          unmask_indefinite_foo:
+            service.unmasked:
+              - name: foo
+              - runtime: False

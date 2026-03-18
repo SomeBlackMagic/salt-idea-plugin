@@ -130,6 +130,35 @@ module:
             If False, fetch is performed but no changes are made to the
             local HEAD. Added in 2015.8.3.
           default_value: "true"
+        - name: sync_tags
+          type: bool
+          required: false
+          description: >-
+            If True, local tags that are not present on the remote will be
+            removed. Added in version 2018.3.4.
+          default_value: "true"
+        - name: bare
+          type: bool
+          required: false
+          description: "If True, manage as a bare repository."
+          default_value: "false"
+        - name: mirror
+          type: bool
+          required: false
+          description: "If True, manage as a mirror (implies bare)."
+          default_value: "false"
+        - name: refspec_branch
+          type: string
+          required: false
+          description: >-
+            Override the refspec used for fetching branches. Default is '*'.
+          default_value: "*"
+        - name: refspec_tag
+          type: string
+          required: false
+          description: >-
+            Override the refspec used for fetching tags. Default is '*'.
+          default_value: "*"
       examples:
         - |
           git@github.com:user/repo.git:
@@ -267,6 +296,13 @@ module:
           required: false
           description: "Update submodules after checkout."
           default_value: "false"
+        - name: fetch_remote
+          type: bool
+          required: false
+          description: >-
+            If True (default), fetch the remote before checking out the
+            revision. Set to False to only check out a locally available rev.
+          default_value: "true"
       examples:
         - |
           myrepo_pinned:
@@ -306,6 +342,27 @@ module:
           type: string
           required: false
           description: "User under which to run git commands. Added in 0.17.0."
+          default_value: ~
+        - name: template
+          type: string
+          required: false
+          description: >-
+            If a new repository is initialized, specify an alternate template
+            directory. Added in version 2015.8.0.
+          default_value: ~
+        - name: separate_git_dir
+          type: string
+          required: false
+          description: >-
+            If a new repository is initialized, specify an alternate $GIT_DIR.
+            Added in version 2015.8.0.
+          default_value: ~
+        - name: shared
+          type: string
+          required: false
+          description: >-
+            Set sharing permissions on git repo. See git-init(1) for details.
+            Added in version 2015.5.0.
           default_value: ~
       examples:
         - |

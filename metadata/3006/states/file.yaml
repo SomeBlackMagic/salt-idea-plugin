@@ -1317,6 +1317,13 @@ module:
           required: false
           description: "Permissions mode to set on directories. Not supported on Windows."
           default_value: ~
+        - name: mode
+          type: string
+          required: false
+          description: >-
+            Alias for dir_mode. The permissions mode to set on directories.
+            Not supported on Windows.
+          default_value: ~
         - name: file_mode
           type: string
           required: false
@@ -1406,6 +1413,14 @@ module:
             If True, clear the existing DACL and replace with the settings
             defined here. If False, new entries are appended.
           default_value: "false"
+        - name: names
+          type: list
+          required: false
+          description: >-
+            Global Salt state parameter. Expands a single state declaration into
+            multiple declarations, one per item in the list. Useful for creating
+            multiple directories with the same settings.
+          default_value: ~
       examples:
         - |
           /var/log/httpd:

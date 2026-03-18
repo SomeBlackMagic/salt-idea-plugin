@@ -95,3 +95,41 @@ module:
                 - gluster volume info work
               - watch:
                 - cmd: stop-volume
+
+    - name: wait
+      description: >-
+        Run a single module function only if the watch statement calls it.
+        Like cmd.run, this state returns True but does not actually execute
+        unless a watched state changes or a watch_in requisite triggers it.
+        Use 'module.run' instead for unconditional execution.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The module function to execute (dotted name, e.g. 'user.rename')."
+          default_value: ~
+      examples:
+        - |
+          sync_grains_on_change:
+            module.wait:
+              - name: saltutil.sync_grains
+              - watch:
+                - file: /etc/salt/grains
+
+    - name: watch
+      description: >-
+        Alias for module.wait. Run a single module function only if the
+        watch statement calls it.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The module function to execute (dotted name, e.g. 'user.rename')."
+          default_value: ~
+      examples:
+        - |
+          sync_grains_on_change:
+            module.watch:
+              - name: saltutil.sync_grains
+              - watch:
+                - file: /etc/salt/grains

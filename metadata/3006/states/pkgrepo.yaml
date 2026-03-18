@@ -1,0 +1,302 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: pkgrepo
+  description: >-
+    Management of APT/DNF/YUM/Zypper package repositories. Allows adding,
+    configuring, and removing software package repositories on Linux systems.
+    Supports Ubuntu PPAs, Fedora COPR, and standard APT/YUM/Zypper repos.
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.pkgrepo.html"
+  functions:
+
+    - name: managed
+      description: >-
+        Ensure that a software package repository is configured on the system.
+        Supports YUM/DNF/Zypper (baseurl/mirrorlist/metalink) and APT
+        (sources.list entries, PPAs, key management) repositories.
+        On APT systems the name must be the complete sources.list entry.
+        On YUM/DNF/Zypper systems the name becomes the repo ID and filename
+        under /etc/yum.repos.d/.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            YUM/DNF/Zypper: the repo ID (used as [section] and filename in
+            /etc/yum.repos.d/). APT: the complete sources.list entry
+            (e.g. "deb http://... precise main").
+          default_value: ~
+        - name: enabled
+          type: bool
+          required: false
+          description: >-
+            Whether the repo is enabled. YUM/DNF/Zypper default: True.
+            On APT systems, passing enabled=False is equivalent to disabled=True.
+          default_value: "true"
+        - name: disabled
+          type: bool
+          required: false
+          description: >-
+            Whether the repo is disabled. APT default: False. On YUM/DNF/Zypper
+            systems, passing disabled=True is equivalent to enabled=False.
+          default_value: "false"
+        - name: humanname
+          type: string
+          required: false
+          description: >-
+            YUM/DNF/Zypper only. The human-readable name for the repo, written
+            as the "name" value in the repo file.
+          default_value: ~
+        - name: baseurl
+          type: string
+          required: false
+          description: >-
+            YUM/DNF/Zypper only. The URL to the repository. One of baseurl,
+            mirrorlist, or metalink is required.
+          default_value: ~
+        - name: mirrorlist
+          type: string
+          required: false
+          description: >-
+            YUM/DNF/Zypper only. URL pointing to a file containing a list
+            of baseURLs. One of baseurl, mirrorlist, or metalink is required.
+          default_value: ~
+        - name: metalink
+          type: string
+          required: false
+          description: >-
+            YUM/DNF only. URL for a curated list of non-stale mirrors.
+            One of baseurl, mirrorlist, or metalink is required.
+          default_value: ~
+        - name: comments
+          type: list
+          required: false
+          description: >-
+            YUM/DNF/Zypper only. List of strings to include as comments
+            (prefixed with #) in the repo file.
+          default_value: ~
+        - name: gpgcheck
+          type: int
+          required: false
+          description: >-
+            YUM/DNF/Zypper only. Whether to check GPG signatures on packages.
+            Passed directly as a key-value pair into the repo file (1 or 0).
+          default_value: ~
+        - name: gpgkey
+          type: string
+          required: false
+          description: >-
+            YUM/DNF/Zypper only. URL or path to the GPG key for this repository.
+            Passed directly as a key-value pair into the repo file.
+          default_value: ~
+        - name: gpgautoimport
+          type: bool
+          required: false
+          description: >-
+            Zypper only. If True, automatically trust and import the new
+            repository signing key specified in gpgkey.
+          default_value: ~
+        - name: copr
+          type: string
+          required: false
+          description: >-
+            Fedora/RedHat only. Use a community package outside of the main
+            package repository, specified as "user/project".
+          default_value: ~
+        - name: ppa
+          type: string
+          required: false
+          description: >-
+            Ubuntu only. Personal Package Archive on Launchpad, specified as
+            "user/archive". The keyid is queried automatically.
+          default_value: ~
+        - name: ppa_auth
+          type: string
+          required: false
+          description: >-
+            Ubuntu only. Authentication for a private PPA, in the format
+            "username:password".
+          default_value: ~
+        - name: architectures
+          type: string
+          required: false
+          description: >-
+            APT only. Comma-separated list of architectures the repository
+            provides (e.g. "amd64").
+          default_value: ~
+        - name: comps
+          type: string
+          required: false
+          description: >-
+            APT only. Comma-separated list of components to use from the
+            repository (e.g. "main,nonfree").
+          default_value: ~
+        - name: file
+          type: string
+          required: false
+          description: >-
+            APT only. Full path to the *.list file in which the repository
+            is configured.
+          default_value: ~
+        - name: dist
+          type: string
+          required: false
+          description: "APT only. Release of the distro the packages should be built for."
+          default_value: ~
+        - name: keyid
+          type: string
+          required: false
+          description: >-
+            APT only. KeyID or list of KeyIDs of the GPG key to install.
+            Requires keyserver to be set. Use either keyid+keyserver, key_url,
+            or key_text — not multiple methods.
+          default_value: ~
+        - name: keyserver
+          type: string
+          required: false
+          description: >-
+            APT only. Name of the keyserver from which to retrieve the GPG key.
+            Requires keyid to be set.
+          default_value: ~
+        - name: key_url
+          type: string
+          required: false
+          description: >-
+            APT only. URL to retrieve the GPG key from. Supports https:// and
+            salt://. Use either key_url, keyid+keyserver, or key_text.
+          default_value: ~
+        - name: key_text
+          type: string
+          required: false
+          description: >-
+            APT only. String representation of the GPG key to install.
+            Use either key_text, key_url, or keyid+keyserver.
+          default_value: ~
+        - name: aptkey
+          type: bool
+          required: false
+          description: >-
+            APT only. Whether to use the apt-key binary for key management.
+            Set to False to use the modern approach (key stored in
+            /etc/apt/keyrings with signed-by in the repo entry). If apt-key
+            is not found in PATH, this is automatically set to False.
+          default_value: "true"
+        - name: allow_insecure_key
+          type: bool
+          required: false
+          description: "APT only. Whether to allow an insecure (http://) key_url."
+          default_value: "true"
+        - name: consolidate
+          type: bool
+          required: false
+          description: >-
+            APT only. If True, consolidate all source definitions into
+            sources.list, clean up unused files, and merge duplicate entries.
+            Runs every time the state is processed.
+          default_value: "false"
+        - name: clean_file
+          type: bool
+          required: false
+          description: >-
+            APT only. If True, empty the target file before configuring
+            the repository. Use with care when multiple sources share a file.
+          default_value: "false"
+        - name: refresh
+          type: bool
+          required: false
+          description: >-
+            APT only. If False, skip refreshing the apt package database
+            after configuring the repository.
+          default_value: "true"
+      examples:
+        - |
+          # YUM/DNF repo
+          base:
+            pkgrepo.managed:
+              - humanname: CentOS-$releasever - Base
+              - mirrorlist: http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=os
+              - gpgcheck: 1
+              - gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+        - |
+          # APT repo with keyserver
+          logstash-repo:
+            pkgrepo.managed:
+              - name: deb http://ppa.launchpad.net/wolfnet/logstash/ubuntu precise main
+              - file: /etc/apt/sources.list.d/logstash.list
+              - keyid: 28B04E4A
+              - keyserver: keyserver.ubuntu.com
+              - require_in:
+                - pkg: logstash
+        - |
+          # APT repo with key_url (modern aptkey: False approach)
+          deb [signed-by=/etc/apt/keyrings/salt-archive-keyring.gpg arch=amd64] https://packages.broadcom.com/artifactory/saltproject-deb/ bionic main:
+            pkgrepo.managed:
+              - file: /etc/apt/sources.list.d/salt.list
+              - key_url: https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
+              - aptkey: False
+        - |
+          # Ubuntu PPA
+          logstash-ppa:
+            pkgrepo.managed:
+              - ppa: wolfnet/logstash
+        - |
+          # Fedora COPR
+          hello-copr:
+            pkgrepo.managed:
+              - copr: mymindstorm/hello
+
+    - name: absent
+      description: >-
+        Ensure that a package repository is not configured on the system.
+        Essentially a wrapper around pkg.del_repo. On APT systems, the name
+        must be the complete sources.list entry.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            The name of the repository to remove. On APT systems this must be
+            the complete source entry.
+          default_value: ~
+        - name: copr
+          type: string
+          required: false
+          description: "Fedora/RedHat only. COPR repository to remove (user/project)."
+          default_value: ~
+        - name: ppa
+          type: string
+          required: false
+          description: "Ubuntu only. PPA to remove (user/archive)."
+          default_value: ~
+        - name: ppa_auth
+          type: string
+          required: false
+          description: "Ubuntu only. Authentication for a private PPA (username:password)."
+          default_value: ~
+        - name: keyid
+          type: string
+          required: false
+          description: "APT only. If passed, the GPG key with this ID will also be removed."
+          default_value: ~
+        - name: keyid_ppa
+          type: bool
+          required: false
+          description: >-
+            APT/Ubuntu only. If True, look up the GPG key ID from
+            ppa.launchpad.net and remove it. Requires the ppa argument.
+            Ignores keyid when set.
+          default_value: "false"
+      examples:
+        - |
+          remove-logstash-ppa:
+            pkgrepo.absent:
+              - ppa: wolfnet/logstash
+        - |
+          remove-hello-copr:
+            pkgrepo.absent:
+              - copr: mymindstorm/hello
+        - |
+          remove-custom-repo:
+            pkgrepo.absent:
+              - name: deb http://ppa.launchpad.net/wolfnet/logstash/ubuntu precise main

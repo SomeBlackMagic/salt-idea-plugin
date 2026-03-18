@@ -60,6 +60,144 @@ module:
           required: false
           description: "If True, upgrade the package if it is already installed."
           default_value: "false"
+        - name: force_reinstall
+          type: bool
+          required: false
+          description: "When upgrading, reinstall packages even if already up-to-date."
+          default_value: "false"
+        - name: ignore_installed
+          type: bool
+          required: false
+          description: "Ignore installed packages and reinstall them."
+          default_value: "false"
+        - name: no_deps
+          type: bool
+          required: false
+          description: "Ignore package dependencies."
+          default_value: "false"
+        - name: index_url
+          type: string
+          required: false
+          description: "Base URL of the Python Package Index."
+          default_value: ~
+        - name: extra_index_url
+          type: string
+          required: false
+          description: "Extra URLs of package indexes to use in addition to index_url."
+          default_value: ~
+        - name: no_index
+          type: bool
+          required: false
+          description: "Ignore package index entirely."
+          default_value: "false"
+        - name: find_links
+          type: string
+          required: false
+          description: "URL to look for packages at."
+          default_value: ~
+        - name: target
+          type: string
+          required: false
+          description: "Install packages into the specified target directory."
+          default_value: ~
+        - name: cwd
+          type: string
+          required: false
+          description: "Current working directory to run pip from."
+          default_value: ~
+        - name: pre_releases
+          type: bool
+          required: false
+          description: "Include pre-releases in the available versions."
+          default_value: "false"
+        - name: cert
+          type: string
+          required: false
+          description: "Provide a path to an alternate CA bundle."
+          default_value: ~
+        - name: use_wheel
+          type: bool
+          required: false
+          description: "Prefer wheel archives (requires pip>=1.4)."
+          default_value: "false"
+        - name: no_use_wheel
+          type: bool
+          required: false
+          description: "Force to not use wheel archives (requires pip>=1.4)."
+          default_value: "false"
+        - name: no_binary
+          type: string
+          required: false
+          description: >-
+            Force to not use binary packages (requires pip >= 7.0.0). Accepts
+            ':all:' to disable all binary, ':none:' to clear, or a list of
+            package names.
+          default_value: ~
+        - name: proxy
+          type: string
+          required: false
+          description: >-
+            Proxy in form user:passwd@proxy.server:port. The user:password@ is
+            optional for unauthenticated proxies.
+          default_value: ~
+        - name: timeout
+          type: int
+          required: false
+          description: "Socket timeout in seconds (default 15)."
+          default_value: ~
+        - name: log
+          type: string
+          required: false
+          description: "Log file where a complete (maximum verbosity) record will be kept."
+          default_value: ~
+        - name: editable
+          type: string
+          required: false
+          description: >-
+            Install something in editable mode
+            (e.g. git+https://github.com/example/repo.git#egg=name).
+          default_value: ~
+        - name: env_vars
+          type: dict
+          required: false
+          description: >-
+            Add or modify environment variables for the build step. Useful for
+            setting INCLUDE or LIBRARY paths.
+          default_value: ~
+        - name: use_vt
+          type: bool
+          required: false
+          description: "Use VT terminal emulation (see output while installing)."
+          default_value: "false"
+        - name: trusted_host
+          type: string
+          required: false
+          description: "Mark this host as trusted even without valid HTTPS."
+          default_value: ~
+        - name: no_cache_dir
+          type: bool
+          required: false
+          description: "Disable the pip cache."
+          default_value: "false"
+        - name: install_options
+          type: list
+          required: false
+          description: >-
+            Extra arguments to supply to the setup.py install command. Use
+            absolute paths for directory options.
+          default_value: ~
+        - name: global_options
+          type: list
+          required: false
+          description: "Extra global options to supply to setup.py before the install command."
+          default_value: ~
+        - name: extra_args
+          type: list
+          required: false
+          description: >-
+            pip keyword and positional arguments not yet implemented in Salt.
+            These are passed directly to pip.
+          default_value: ~
       examples:
         - |
           django:
@@ -96,9 +234,70 @@ module:
           required: false
           description: "User to run the pip uninstall command as."
           default_value: ~
+        - name: log
+          type: string
+          required: false
+          description: "Log file for the operation."
+          default_value: ~
+        - name: proxy
+          type: string
+          required: false
+          description: "Proxy in form user:passwd@proxy.server:port."
+          default_value: ~
+        - name: timeout
+          type: int
+          required: false
+          description: "Socket timeout in seconds."
+          default_value: ~
+        - name: cwd
+          type: string
+          required: false
+          description: "Current working directory to run pip from."
+          default_value: ~
+        - name: use_vt
+          type: bool
+          required: false
+          description: "Use VT terminal emulation."
+          default_value: "false"
       examples:
         - |
           remove_old_lib:
             pip.removed:
               - name: some-old-package
               - runas: appuser
+
+    - name: uptodate
+      description: >-
+        Verify that the system pip packages are completely up to date.
+        Upgrades all installed packages. Added in version 2015.5.0.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Arbitrary state identifier name."
+          default_value: ~
+        - name: bin_env
+          type: string
+          required: false
+          description: "Path to a virtualenv directory or pip binary to use."
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "User under which to run pip."
+          default_value: ~
+        - name: cwd
+          type: string
+          required: false
+          description: "Current working directory to run pip from."
+          default_value: ~
+        - name: use_vt
+          type: bool
+          required: false
+          description: "Use VT terminal emulation."
+          default_value: "false"
+      examples:
+        - |
+          pip_uptodate:
+            pip.uptodate:
+              - bin_env: /opt/myapp/venv

@@ -1,0 +1,604 @@
+version: "1.0"
+salt_version: "3006"
+type: state_module
+module:
+  name: cmd
+  description: >-
+    Execution of arbitrary commands. Manages the enforcement of executed
+    commands and scripts on minions — running commands conditionally, downloading
+    and executing scripts from the Salt master, and invoking Python functions.
+    Success is determined by the exit code (0 = success).
+  doc_url: "https://docs.saltproject.io/en/latest/ref/states/all/salt.states.cmd.html"
+  functions:
+
+    - name: run
+      description: >-
+        Run a command if certain circumstances are met. The command runs every
+        time the SLS is applied unless restricted with onlyif, unless, or creates.
+        Use onchanges requisite instead of cmd.wait for event-driven execution.
+        Exit code 0 is considered success; non-zero is failure.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            The command to execute. Runs with the path and permissions of
+            the salt-minion.
+          default_value: ~
+        - name: cwd
+          type: string
+          required: false
+          description: "Working directory in which to execute the command. Defaults to /root."
+          default_value: ~
+        - name: root
+          type: string
+          required: false
+          description: >-
+            Path to the root of a chroot jail. If set, the command runs
+            inside a chroot.
+          default_value: ~
+        - name: runas
+          type: string
+          required: false
+          description: "User name or UID to run the command as."
+          default_value: ~
+        - name: shell
+          type: string
+          required: false
+          description: "Shell to use for execution. Defaults to the shell grain."
+          default_value: ~
+        - name: env
+          type: list
+          required: false
+          description: >-
+            List of environment variables to set before execution. Each entry
+            is a key: value mapping. Note: boolean-like values (yes, no, true,
+            false) must be quoted in YAML.
+          default_value: ~
+        - name: prepend_path
+          type: string
+          required: false
+          description: >-
+            $PATH segment to prepend (without trailing ':'). Easier alternative
+            to the Jinja $PATH workaround.
+          default_value: ~
+        - name: stateful
+          type: bool
+          required: false
+          description: >-
+            If True, the command is expected to report its own state changes
+            via stdout (JSON object or key=value pairs with "changed" and
+            "comment" keys). Supports an optional test_name sub-key for
+            test mode.
+          default_value: "false"
+        - name: output_loglevel
+          type: string
+          required: false
+          description: >-
+            Log level at which command output is logged to the minion log.
+            Use "quiet" to suppress. The command itself is always logged at debug.
+          default_value: "debug"
+        - name: hide_output
+          type: bool
+          required: false
+          description: >-
+            If True, suppress stdout and stderr from the state results.
+            Independent of output_loglevel.
+          default_value: "false"
+        - name: timeout
+          type: int
+          required: false
+          description: >-
+            Seconds to wait before sending SIGTERM to the process. If SIGTERM
+            is ignored, SIGKILL is sent.
+          default_value: ~
+        - name: ignore_timeout
+          type: bool
+          required: false
+          description: "If True, ignore the timeout. Useful for nohup processes."
+          default_value: "false"
+        - name: use_vt
+          type: bool
+          required: false
+          description: >-
+            Use VT utils to stream command output interactively to the console
+            and logs. Experimental.
+          default_value: "false"
+        - name: bg
+          type: bool
+          required: false
+          description: >-
+            If True, run the command in the background without awaiting or
+            delivering results.
+          default_value: "false"
+        - name: creates
+          type: string
+          required: false
+          description: >-
+            Only run if the file (or any file in a list) specified here does
+            not exist. Accepts a single path or a list of paths.
+          default_value: ~
+        - name: success_retcodes
+          type: list
+          required: false
+          description: >-
+            List of non-zero return codes to treat as success. If the command
+            returns any of these codes, the state result will be True.
+          default_value: ~
+        - name: success_stdout
+          type: list
+          required: false
+          description: >-
+            List of strings. If any of these strings appear in stdout, the
+            return code is overridden with zero (success).
+          default_value: ~
+        - name: success_stderr
+          type: list
+          required: false
+          description: >-
+            List of strings. If any of these strings appear in stderr, the
+            return code is overridden with zero (success).
+          default_value: ~
+      examples:
+        - |
+          # Run every time
+          'date > /tmp/salt-run':
+            cmd.run
+        - |
+          # Only run if /tmp/foo does not exist
+          touch /tmp/foo:
+            cmd.run:
+              - creates: /tmp/foo
+        - |
+          # Only run if unless condition fails
+          '> /var/log/messages/':
+            cmd.run:
+              - unless: echo 'foo' > /tmp/.test && rm -f /tmp/.test
+        - |
+          # Run as a specific user with env variables
+          mycommand:
+            cmd.run:
+              - name: /usr/local/bin/myapp --configure
+              - runas: myuser
+              - cwd: /opt/myapp
+              - env:
+                - MYVAR: somevalue
+        - |
+          # Reload modules after pip install
+          getpip:
+            cmd.run:
+              - name: /usr/bin/python /usr/local/sbin/get-pip.py
+              - unless: which pip
+              - require:
+                - pkg: python
+              - reload_modules: True
+        - |
+          # Run on changes to another state
+          /usr/local/bin/postinstall.sh:
+            cmd.run:
+              - onchanges:
+                - pkg: mycustompkg
+            file.managed:
+              - source: salt://utils/scripts/postinstall.sh
+
+    - name: script
+      description: >-
+        Download a script from a remote source and execute it with specified
+        arguments. The script can be hosted on the Salt master, an HTTP/FTP
+        server, or any other supported file source. Supports templating.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            Either "cmd arg1 arg2..." with arguments, or a salt:// source URI.
+          default_value: ~
+        - name: source
+          type: string
+          required: false
+          description: >-
+            URI of the script to download. Supports salt://, http(s)://, ftp://.
+            If the file is at salt://spam/eggs on the master, use salt://spam/eggs.
+          default_value: ~
+        - name: template
+          type: string
+          required: false
+          description: "Template engine to render the downloaded script (jinja, mako, wempy)."
+          default_value: ~
+        - name: cwd
+          type: string
+          required: false
+          description: "Working directory in which to execute the script. Defaults to /root."
+          default_value: ~
+        - name: runas
+          type: string
+          required: false
+          description: >-
+            User to run the script as. On Windows, also requires the password
+            parameter, and the user must be in the Administrators group.
+          default_value: ~
+        - name: password
+          type: string
+          required: false
+          description: "Password for the runas user. Windows only."
+          default_value: ~
+        - name: shell
+          type: string
+          required: false
+          description: "Shell to use for execution. Defaults to the shell grain."
+          default_value: ~
+        - name: env
+          type: list
+          required: false
+          description: >-
+            List of environment variables to set before execution. Each entry
+            is a key: value mapping.
+          default_value: ~
+        - name: saltenv
+          type: string
+          required: false
+          description: "Salt environment to use when downloading the script."
+          default_value: "base"
+        - name: args
+          type: string
+          required: false
+          description: >-
+            Command line arguments to pass to the script. Only used if no args
+            are specified as part of the name parameter.
+          default_value: ~
+        - name: stateful
+          type: bool
+          required: false
+          description: >-
+            If True, the script is expected to report its own state via stdout.
+            Supports an optional test_name sub-key for test mode.
+          default_value: "false"
+        - name: timeout
+          type: int
+          required: false
+          description: "Seconds to wait before sending SIGTERM to the process."
+          default_value: ~
+        - name: use_vt
+          type: bool
+          required: false
+          description: "Use VT utils to stream output interactively. Experimental."
+          default_value: "false"
+        - name: output_loglevel
+          type: string
+          required: false
+          description: "Log level for command output in the minion log."
+          default_value: "debug"
+        - name: hide_output
+          type: bool
+          required: false
+          description: "If True, suppress stdout and stderr from state results."
+          default_value: "false"
+        - name: context
+          type: dict
+          required: false
+          description: "Overrides default context variables passed to the template."
+          default_value: ~
+        - name: defaults
+          type: dict
+          required: false
+          description: "Default context passed to the template."
+          default_value: ~
+        - name: creates
+          type: string
+          required: false
+          description: >-
+            Only run if the file (or any file in a list) specified here does
+            not exist.
+          default_value: ~
+        - name: success_retcodes
+          type: list
+          required: false
+          description: "List of non-zero return codes to treat as success."
+          default_value: ~
+        - name: success_stdout
+          type: list
+          required: false
+          description: "List of strings; if found in stdout, return code is overridden with 0."
+          default_value: ~
+        - name: success_stderr
+          type: list
+          required: false
+          description: "List of strings; if found in stderr, return code is overridden with 0."
+          default_value: ~
+      examples:
+        - |
+          salt://scripts/foo.sh:
+            cmd.script:
+              - env:
+                - BATCH: 'yes'
+        - |
+          run_installer:
+            cmd.script:
+              - name: installer
+              - source: salt://scripts/installer.sh
+              - template: jinja
+              - runas: root
+              - creates: /opt/myapp/bin/myapp
+        - |
+          Run masterscript:
+            cmd.script:
+              - name: masterscript
+              - source: salt://path/to/masterscript
+              - cwd: /
+              - stateful:
+                - test_name: masterscript test
+
+    - name: wait
+      description: >-
+        Run the given command only when a watch statement triggers it. Deprecated
+        — use cmd.run with the onchanges requisite instead. This function does
+        nothing on its own; all logic is inside mod_watch, called on changes.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The command to execute."
+          default_value: ~
+        - name: cwd
+          type: string
+          required: false
+          description: "Working directory in which to execute the command. Defaults to /root."
+          default_value: ~
+        - name: root
+          type: string
+          required: false
+          description: "Path to the root of a chroot jail."
+          default_value: ~
+        - name: runas
+          type: string
+          required: false
+          description: "User name to run the command as."
+          default_value: ~
+        - name: shell
+          type: string
+          required: false
+          description: "Shell to use for execution. Defaults to /bin/sh."
+          default_value: ~
+        - name: env
+          type: list
+          required: false
+          description: "List of environment variables to set before execution."
+          default_value: ~
+        - name: stateful
+          type: bool
+          required: false
+          description: "If True, the command reports its own state via stdout."
+          default_value: "false"
+        - name: output_loglevel
+          type: string
+          required: false
+          description: "Log level for command output in the minion log."
+          default_value: "debug"
+        - name: hide_output
+          type: bool
+          required: false
+          description: "If True, suppress stdout and stderr from state results."
+          default_value: "false"
+        - name: use_vt
+          type: bool
+          required: false
+          description: "Use VT utils to stream output interactively. Experimental."
+          default_value: "false"
+        - name: creates
+          type: string
+          required: false
+          description: "Only run if the file (or any file in a list) does not exist."
+          default_value: ~
+        - name: success_retcodes
+          type: list
+          required: false
+          description: "List of non-zero return codes to treat as success."
+          default_value: ~
+        - name: success_stdout
+          type: list
+          required: false
+          description: "List of strings; if found in stdout, return code is overridden with 0."
+          default_value: ~
+        - name: success_stderr
+          type: list
+          required: false
+          description: "List of strings; if found in stderr, return code is overridden with 0."
+          default_value: ~
+      examples:
+        - |
+          # Deprecated — prefer cmd.run with onchanges
+          /usr/local/bin/postinstall.sh:
+            cmd.wait:
+              - watch:
+                - pkg: mycustompkg
+
+    - name: wait_script
+      description: >-
+        Download a script from a remote source and execute it only when a watch
+        statement triggers it. Deprecated — use cmd.script with onchanges instead.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "The command to execute."
+          default_value: ~
+        - name: source
+          type: string
+          required: false
+          description: >-
+            The source script on the Salt master (salt://spam/eggs) to download
+            and execute.
+          default_value: ~
+        - name: template
+          type: string
+          required: false
+          description: "Template engine to render the downloaded script."
+          default_value: ~
+        - name: cwd
+          type: string
+          required: false
+          description: "Working directory. Defaults to /root."
+          default_value: ~
+        - name: runas
+          type: string
+          required: false
+          description: "User name to run the script as."
+          default_value: ~
+        - name: shell
+          type: string
+          required: false
+          description: "Shell to use. Defaults to the shell grain."
+          default_value: ~
+        - name: env
+          type: list
+          required: false
+          description: "List of environment variables to set before execution."
+          default_value: ~
+        - name: stateful
+          type: bool
+          required: false
+          description: "If True, the script reports its own state via stdout."
+          default_value: "false"
+        - name: use_vt
+          type: bool
+          required: false
+          description: "Use VT utils to stream output interactively. Experimental."
+          default_value: "false"
+        - name: output_loglevel
+          type: string
+          required: false
+          description: "Log level for command output in the minion log."
+          default_value: "debug"
+        - name: hide_output
+          type: bool
+          required: false
+          description: "If True, suppress stdout and stderr from state results."
+          default_value: "false"
+        - name: success_retcodes
+          type: list
+          required: false
+          description: "List of non-zero return codes to treat as success."
+          default_value: ~
+        - name: success_stdout
+          type: list
+          required: false
+          description: "List of strings; if found in stdout, return code is overridden with 0."
+          default_value: ~
+        - name: success_stderr
+          type: list
+          required: false
+          description: "List of strings; if found in stderr, return code is overridden with 0."
+          default_value: ~
+      examples:
+        - |
+          salt://scripts/foo.sh:
+            cmd.wait_script:
+              - env:
+                - BATCH: 'yes'
+              - watch:
+                - pkg: mycustompkg
+
+    - name: call
+      description: >-
+        Invoke a pre-defined Python function with arguments specified in the
+        state declaration. Primarily used by the pydsl renderer. The stateful
+        argument has no effect here. The return value is interpreted as a state
+        result dict if it is a dict, otherwise wrapped in one.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name identifier for this state."
+          default_value: ~
+        - name: func
+          type: string
+          required: true
+          description: "The Python function to invoke."
+          default_value: ~
+        - name: args
+          type: list
+          required: false
+          description: "Positional arguments to pass to the function."
+          default_value: "[]"
+        - name: kws
+          type: dict
+          required: false
+          description: "Keyword arguments to pass to the function."
+          default_value: ~
+        - name: output_loglevel
+          type: string
+          required: false
+          description: "Log level for output in the minion log."
+          default_value: "debug"
+        - name: hide_output
+          type: bool
+          required: false
+          description: "If True, suppress output from state results."
+          default_value: "false"
+        - name: use_vt
+          type: bool
+          required: false
+          description: "Use VT utils to stream output. Experimental."
+          default_value: "false"
+      examples:
+        - |
+          call_myfunc:
+            cmd.call:
+              - func: mymodule.myfunction
+              - args:
+                - arg1
+              - kws:
+                  key: value
+
+    - name: wait_call
+      description: >-
+        Invoke a Python function only when a watch statement triggers it.
+        Deprecated — use cmd.call with onchanges instead.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Name identifier for this state."
+          default_value: ~
+        - name: func
+          type: string
+          required: true
+          description: "The Python function to invoke."
+          default_value: ~
+        - name: args
+          type: list
+          required: false
+          description: "Positional arguments to pass to the function."
+          default_value: "[]"
+        - name: kws
+          type: dict
+          required: false
+          description: "Keyword arguments to pass to the function."
+          default_value: ~
+        - name: stateful
+          type: bool
+          required: false
+          description: "If True, interpret the function return as state data."
+          default_value: "false"
+        - name: use_vt
+          type: bool
+          required: false
+          description: "Use VT utils to stream output. Experimental."
+          default_value: "false"
+        - name: output_loglevel
+          type: string
+          required: false
+          description: "Log level for output in the minion log."
+          default_value: "debug"
+        - name: hide_output
+          type: bool
+          required: false
+          description: "If True, suppress output from state results."
+          default_value: "false"
+      examples:
+        - |
+          wait_call_myfunc:
+            cmd.wait_call:
+              - func: mymodule.myfunction
+              - watch:
+                - pkg: mycustompkg

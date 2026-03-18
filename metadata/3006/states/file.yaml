@@ -28,7 +28,55 @@ module:
           required: false
           description: >-
             URI of the source file. Supports salt:// (file server),
-            http://, https://, and ftp:// URIs.
+            http://, https://, ftp://, and s3:// URIs. Can also be a list
+            of URIs; the first existing source will be used.
+          default_value: ~
+        - name: source_hash
+          type: string
+          required: false
+          description: >-
+            Hash string or URI to a hash file used to verify the source file.
+            Supports md5, sha1, sha224, sha256, sha384, sha512. Required when
+            source is an http://, https://, or ftp:// URI.
+          default_value: ""
+        - name: source_hash_name
+          type: string
+          required: false
+          description: >-
+            When source_hash refers to a hash file, use this filename to
+            identify the correct hash entry when multiple filenames appear
+            in the hash file.
+          default_value: ~
+        - name: keep_source
+          type: bool
+          required: false
+          description: >-
+            Set to False to discard the cached copy of the source file once
+            the state completes. Useful for large files to save minion cache space.
+          default_value: "true"
+        - name: user
+          type: string
+          required: false
+          description: "User owner of the file."
+          default_value: ~
+        - name: group
+          type: string
+          required: false
+          description: "Group owner of the file. Ignored on Windows."
+          default_value: ~
+        - name: mode
+          type: string
+          required: false
+          description: >-
+            Permissions mode of the file as an octal string (e.g. "755", "644").
+            Can be set to "keep" to preserve the mode from the Salt fileserver.
+          default_value: ~
+        - name: attrs
+          type: string
+          required: false
+          description: >-
+            Linux file attributes to set (e.g. "i", "a"). Accepts any combination
+            of characters: aAcCdDeijPsStTu. Not supported on Windows.
           default_value: ~
         - name: template
           type: string
@@ -38,44 +86,296 @@ module:
             (e.g. "jinja"). Allows use of pillar and grain data in
             file contents.
           default_value: ~
-        - name: contents
-          type: string
-          required: false
-          description: >-
-            Inline string to use as the file contents instead of a
-            source URI.
-          default_value: ~
-        - name: user
-          type: string
-          required: false
-          description: "User owner of the file."
-          default_value: ~
-        - name: group
-          type: string
-          required: false
-          description: "Group owner of the file."
-          default_value: ~
-        - name: mode
-          type: string
-          required: false
-          description: >-
-            Permissions mode of the file as an octal string
-            (e.g. "755", "644").
-          default_value: ~
-        - name: mkdirs
+        - name: makedirs
           type: bool
           required: false
           description: >-
             If True, create any missing parent directories before
             creating the file.
           default_value: "false"
+        - name: dir_mode
+          type: string
+          required: false
+          description: >-
+            Permissions mode to set on directories created when makedirs is True.
+            If not set, directories get the file mode with the execute bit added.
+          default_value: ~
+        - name: context
+          type: dict
+          required: false
+          description: "Overrides default context variables passed to the template."
+          default_value: ~
+        - name: replace
+          type: bool
+          required: false
+          description: >-
+            If False and the file already exists, the file will not be modified
+            even if changes would otherwise be made. Permissions and ownership
+            will still be enforced.
+          default_value: "true"
+        - name: defaults
+          type: dict
+          required: false
+          description: "Default context passed to the template."
+          default_value: ~
+        - name: backup
+          type: string
+          required: false
+          description: >-
+            Overrides the default backup mode for this specific file.
+            See backup_mode documentation for more details.
+          default_value: ""
+        - name: show_changes
+          type: bool
+          required: false
+          description: >-
+            Output a unified diff of the old file and the new file.
+            If False, return a boolean if any changes were made.
+          default_value: "true"
+        - name: create
+          type: bool
+          required: false
+          description: >-
+            If False, the file will only be managed if it already exists
+            on the system.
+          default_value: "true"
+        - name: contents
+          type: string
+          required: false
+          description: >-
+            Inline string to use as the file contents instead of a
+            source URI. Cannot be used together with source. Accepts
+            a single string, multiline YAML string, or a list of strings.
+          default_value: ~
+        - name: tmp_dir
+          type: string
+          required: false
+          description: >-
+            Directory for the temp file created by check_cmd. Useful for
+            checkers that require the config file to reside in a specific
+            directory (e.g. daemons restricted by apparmor).
+          default_value: ~
+        - name: tmp_ext
+          type: string
+          required: false
+          description: >-
+            Suffix for the temp file created by check_cmd. Useful for
+            checkers that require a specific file extension (e.g. .conf).
+          default_value: ""
+        - name: contents_pillar
+          type: string
+          required: false
+          description: >-
+            Operates like contents, but draws the file content from a pillar
+            value using pillar path syntax (e.g. "mykey:subkey"). Can also
+            be a list; pillar values will be concatenated.
+          default_value: ~
+        - name: contents_grains
+          type: string
+          required: false
+          description: >-
+            Operates like contents, but draws the file content from a grain
+            value using grains path syntax (e.g. "motd").
+          default_value: ~
+        - name: contents_newline
+          type: bool
+          required: false
+          description: >-
+            If True, a newline is added to the end of the file when using
+            contents, contents_pillar, or contents_grains if one is not
+            already present.
+          default_value: "true"
+        - name: contents_delimiter
+          type: string
+          required: false
+          description: >-
+            Alternate delimiter for contents_pillar or contents_grains,
+            passed through to pillar.get or grains.get.
+          default_value: ":"
+        - name: encoding
+          type: string
+          required: false
+          description: >-
+            File encoding to use. If not specified, the system locale is used
+            (usually UTF-8). See Python codecs documentation for available
+            encodings.
+          default_value: ~
+        - name: encoding_errors
+          type: string
+          required: false
+          description: >-
+            Error handling scheme for encoding. See Python codecs documentation
+            for available schemes.
+          default_value: "strict"
+        - name: allow_empty
+          type: bool
+          required: false
+          description: >-
+            If False, the state will fail if contents_pillar or contents_grains
+            resolve to an empty value.
+          default_value: "true"
+        - name: follow_symlinks
+          type: bool
+          required: false
+          description: >-
+            If the desired path is a symlink, follow it and make changes to
+            the file to which the symlink points.
+          default_value: "true"
+        - name: check_cmd
+          type: string
+          required: false
+          description: >-
+            Command to run against a temporary copy of the new managed contents
+            before applying changes. If the command exits non-zero the state
+            fails and no changes are made. Note: this check_cmd differs from
+            the global check_cmd state argument.
+          default_value: ~
+        - name: skip_verify
+          type: bool
+          required: false
+          description: >-
+            If True, hash verification of remote file sources (http://, https://,
+            ftp://) will be skipped, and the source_hash argument will be ignored.
+          default_value: "false"
+        - name: selinux
+          type: dict
+          required: false
+          description: >-
+            SELinux context to set on the managed file. Accepts keys: seuser,
+            serole, setype, serange.
+          default_value: ~
+        - name: win_owner
+          type: string
+          required: false
+          description: >-
+            The owner of the file on Windows. Falls back to user, then to the
+            account under which Salt is running.
+          default_value: ~
+        - name: win_perms
+          type: dict
+          required: false
+          description: >-
+            Dictionary of permissions to grant on Windows. Each key is a user
+            or group name; each value is a dict with a 'perms' key (basic or
+            list of advanced permissions).
+          default_value: ~
+        - name: win_deny_perms
+          type: dict
+          required: false
+          description: >-
+            Dictionary of permissions to deny on Windows. Same structure as
+            win_perms.
+          default_value: ~
+        - name: win_inheritance
+          type: bool
+          required: false
+          description: "True to inherit permissions from the parent directory on Windows."
+          default_value: "true"
+        - name: win_perms_reset
+          type: bool
+          required: false
+          description: >-
+            If True, the existing DACL will be cleared and replaced with the
+            settings defined in this state. If False, new entries are appended.
+          default_value: "false"
+        - name: verify_ssl
+          type: bool
+          required: false
+          description: >-
+            If False, remote https:// sources and source_hash will not validate
+            the server's certificate.
+          default_value: "true"
+        - name: use_etag
+          type: bool
+          required: false
+          description: >-
+            If True, remote http/https sources will use the ETag header to
+            determine if the remote file needs to be re-downloaded, without
+            requiring a full hash comparison.
+          default_value: "false"
+        - name: signature
+          type: string
+          required: false
+          description: >-
+            Ensure a valid signature exists on the source file. Set to true for
+            inline signatures, or to a file URI for a detached signature.
+          default_value: ~
+        - name: source_hash_sig
+          type: string
+          required: false
+          description: >-
+            When source_hash is a file, ensure a valid signature exists on it.
+            Set to true for inline (clearsigned) signatures, or to a file URI
+            for a detached one.
+          default_value: ~
+        - name: signed_by_any
+          type: list
+          required: false
+          description: >-
+            When verifying signatures, require at least one valid signature
+            from one of this list of keys (identified by fingerprint by default).
+          default_value: ~
+        - name: signed_by_all
+          type: list
+          required: false
+          description: >-
+            When verifying signatures, require a valid signature from every key
+            in this list (identified by fingerprint by default).
+          default_value: ~
+        - name: keyring
+          type: string
+          required: false
+          description: "Keyring to use when verifying signatures."
+          default_value: ~
+        - name: gnupghome
+          type: string
+          required: false
+          description: "GnuPG home directory to use when verifying signatures."
+          default_value: ~
+        - name: ignore_ordering
+          type: bool
+          required: false
+          description: >-
+            If True, changes in line order will be ignored only for the purposes
+            of triggering watch/onchanges requisites. Changes are still applied
+            and reported.
+          default_value: "false"
+        - name: ignore_whitespace
+          type: bool
+          required: false
+          description: >-
+            If True, changes in whitespace will be ignored only for the purposes
+            of triggering watch/onchanges requisites. Implies ignore_ordering=True.
+          default_value: "false"
+        - name: ignore_comment_characters
+          type: string
+          required: false
+          description: >-
+            If set to a character string, changes after that string on a line
+            will be ignored only for the purposes of triggering watch/onchanges
+            requisites. Implies ignore_ordering=True.
+          default_value: ~
+        - name: new_file_diff
+          type: bool
+          required: false
+          description: >-
+            If True, creation of new files will still show a diff in the
+            changes return.
+          default_value: "false"
+        - name: sig_backend
+          type: string
+          required: false
+          description: >-
+            Execution module to use as a backend when verifying signatures.
+            Must be compatible with the gpg.verify API.
+          default_value: "gpg"
       examples:
         - |
           /etc/foo.conf:
             file.managed:
               - source: salt://foo.conf
               - template: jinja
-              - mkdirs: True
+              - makedirs: True
               - user: apache
               - group: apache
               - mode: 755
@@ -94,6 +394,29 @@ module:
               - source: salt://apache2/apache2.conf
               - listen_in:
                 - service: apache2
+        - |
+          /tmp/tomdroid-src-0.7.3.tar.gz:
+            file.managed:
+              - source: https://launchpad.net/tomdroid/beta/0.7.3/+download/tomdroid-src-0.7.3.tar.gz
+              - source_hash: 79eef25f9b0b2c642c62b7f737d4f53f
+              - skip_verify: False
+        - |
+          /home/deployer/.ssh/id_rsa:
+            file.managed:
+              - user: deployer
+              - group: deployer
+              - mode: 600
+              - attrs: a
+              - contents_pillar: userdata:deployer:id_rsa
+        - |
+          /etc/sudoers:
+            file.managed:
+              - user: root
+              - group: root
+              - mode: 0440
+              - source: salt://sudoers/files/sudoers.jinja
+              - template: jinja
+              - check_cmd: /usr/sbin/visudo -c -f
 
     - name: recurse
       description: >-
@@ -115,15 +438,150 @@ module:
             salt:// URI of the source directory on the Salt master's
             file server.
           default_value: ~
+        - name: keep_source
+          type: bool
+          required: false
+          description: >-
+            Set to False to discard the cached copy of the source files
+            once the state completes.
+          default_value: "true"
+        - name: clean
+          type: bool
+          required: false
+          description: >-
+            If True, only files managed by Salt will be kept in the target
+            directory. Everything else will be deleted.
+          default_value: "false"
+        - name: require
+          type: list
+          required: false
+          description: "Require other resources such as packages or files."
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "User owner of the synced files and directories."
+          default_value: ~
+        - name: group
+          type: string
+          required: false
+          description: "Group owner of the synced files and directories. Ignored on Windows."
+          default_value: ~
+        - name: dir_mode
+          type: string
+          required: false
+          description: "Permissions mode to set on created directories."
+          default_value: ~
+        - name: file_mode
+          type: string
+          required: false
+          description: >-
+            Permissions mode to set on created files. Can be set to "keep"
+            to preserve mode from the Salt fileserver.
+          default_value: ~
+        - name: sym_mode
+          type: string
+          required: false
+          description: "Permissions mode to set on created symlinks."
+          default_value: ~
         - name: template
           type: string
           required: false
           description: "Template engine to use when rendering source files."
           default_value: ~
+        - name: context
+          type: dict
+          required: false
+          description: "Overrides default context variables passed to the template."
+          default_value: ~
+        - name: replace
+          type: bool
+          required: false
+          description: >-
+            If False and a file already exists, it will not be modified even
+            if changes would otherwise be made. Permissions and ownership
+            will still be enforced.
+          default_value: "true"
+        - name: defaults
+          type: dict
+          required: false
+          description: "Default context passed to the template."
+          default_value: ~
         - name: include_empty
           type: bool
           required: false
           description: "If True, include empty directories in the sync."
+          default_value: "false"
+        - name: backup
+          type: string
+          required: false
+          description: >-
+            Overrides the default backup mode for all replaced files.
+            See backup_mode documentation for more details.
+          default_value: ""
+        - name: include_pat
+          type: string
+          required: false
+          description: >-
+            When copying, include only files matching this pattern (glob by
+            default; prefix with E@ for regexp). Can be a list of patterns.
+          default_value: ~
+        - name: exclude_pat
+          type: string
+          required: false
+          description: >-
+            Exclude files matching this pattern when copying. Applied after
+            include_pat. Also excludes from removal when clean=True. Can be
+            a list of patterns.
+          default_value: ~
+        - name: maxdepth
+          type: int
+          required: false
+          description: >-
+            Only copy paths up to this depth from the source directory.
+            0 means only files directly in the source directory.
+          default_value: ~
+        - name: keep_symlinks
+          type: bool
+          required: false
+          description: >-
+            If True, copy symlinks as symlinks rather than following them
+            and copying the target. Ignored if fileserver_followsymlinks is False.
+          default_value: "false"
+        - name: force_symlinks
+          type: bool
+          required: false
+          description: >-
+            If True, force creation of symlinks by removing any existing files
+            or directories that would obstruct them. Only used when keep_symlinks
+            is True.
+          default_value: "false"
+        - name: win_owner
+          type: string
+          required: false
+          description: "Owner of created symlinks and directories on Windows."
+          default_value: ~
+        - name: win_perms
+          type: dict
+          required: false
+          description: "Dictionary of permissions to grant on Windows."
+          default_value: ~
+        - name: win_deny_perms
+          type: dict
+          required: false
+          description: "Dictionary of permissions to deny on Windows."
+          default_value: ~
+        - name: win_inheritance
+          type: bool
+          required: false
+          description: "True to inherit permissions from parent directory on Windows."
+          default_value: "true"
+        - name: merge
+          type: bool
+          required: false
+          description: >-
+            When source is a list, merge paths from all existing sources instead
+            of using only the first existing one. Earlier sources take priority.
           default_value: "false"
       examples:
         - |
@@ -154,31 +612,91 @@ module:
         - name: name
           type: string
           required: true
-          description: "Absolute path of the file to modify."
+          description: "Absolute path of the file to modify. Symlinks are resolved to their target."
           default_value: ~
         - name: pattern
           type: string
           required: true
-          description: "Regular expression pattern to search for in the file."
+          description: "Regular expression pattern to search for in the file (Python re.search)."
           default_value: ~
         - name: repl
           type: string
           required: true
           description: "Replacement string for each match of the pattern."
           default_value: ~
-        - name: flags
-          type: list
-          required: false
-          description: >-
-            List of Python regex flags to apply
-            (e.g. ["IGNORECASE", "MULTILINE"]).
-          default_value: ~
         - name: count
           type: int
           required: false
           description: >-
-            Maximum number of replacements to make. 0 means replace all.
+            Maximum number of replacements to make. 0 means replace all
+            occurrences.
           default_value: "0"
+        - name: flags
+          type: list
+          required: false
+          description: >-
+            List of Python re module flag names to apply
+            (e.g. ["IGNORECASE", "MULTILINE"]). Can also be an integer XOR
+            of flag values. Defaults to 8 (MULTILINE).
+          default_value: "8"
+        - name: bufsize
+          type: string
+          required: false
+          description: >-
+            How much of the file to buffer into memory at once. Default value
+            1 processes one line at a time. The special value "file" reads the
+            entire file into memory before processing.
+          default_value: "1"
+        - name: append_if_not_found
+          type: bool
+          required: false
+          description: >-
+            If True and pattern is not found, append the replacement content
+            to the end of the file.
+          default_value: "false"
+        - name: prepend_if_not_found
+          type: bool
+          required: false
+          description: >-
+            If True and pattern is not found, prepend the replacement content
+            to the beginning of the file.
+          default_value: "false"
+        - name: not_found_content
+          type: string
+          required: false
+          description: >-
+            Content to use for append/prepend when pattern is not found.
+            If None, uses repl. Useful when repl contains backreferences.
+          default_value: ~
+        - name: backup
+          type: string
+          required: false
+          description: >-
+            File extension to use for a backup of the file before editing.
+            Set to False to skip making a backup.
+          default_value: ".bak"
+        - name: show_changes
+          type: bool
+          required: false
+          description: >-
+            Output a unified diff of the old file and the new file.
+            If False, return a boolean indicating whether any changes were made.
+          default_value: "true"
+        - name: ignore_if_missing
+          type: bool
+          required: false
+          description: >-
+            If False (default), the state displays an error if the file is
+            missing. If True, the state simply reports no changes.
+          default_value: "false"
+        - name: backslash_literal
+          type: bool
+          required: false
+          description: >-
+            If True, interpret backslashes in repl as literal characters rather
+            than escape sequences. Useful with append/prepend to prevent
+            double-interpretation on subsequent runs.
+          default_value: "false"
       examples:
         - |
           comment-repo:
@@ -188,6 +706,12 @@ module:
               - repl: enabled=1
               - check_cmd:
                 - "! grep 'enabled=0' /etc/yum.repos.d/fedora.repo"
+        - |
+          add_login_group_to_winbind_ssh_access_list:
+            file.replace:
+              - name: /etc/security/pam_winbind.conf
+              - pattern: '^(require_membership_of = )(.*)$'
+              - repl: '\1\2,append-new-group-to-line'
 
     - name: touch
       description: >-
@@ -214,6 +738,13 @@ module:
             Set the modification time to this value instead of the
             current time.
           default_value: ~
+        - name: makedirs
+          type: bool
+          required: false
+          description: >-
+            If True, create any missing parent directories before
+            touching the file.
+          default_value: "false"
       examples:
         - |
           contrived creates example:
@@ -257,3 +788,1696 @@ module:
                   attempts: 10
                   interval: 2
                   splay: 5
+
+    - name: absent
+      description: >-
+        Ensure that the named file or directory is absent. If it exists,
+        it will be deleted. Works to reverse any file state function.
+        If a directory is supplied, it will be recursively deleted.
+        To delete only directory contents, use file.directory with clean=True.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path which should be deleted."
+          default_value: ~
+      examples:
+        - |
+          remove:
+            file.absent:
+              - name: /tmp/file_to_remove
+
+    - name: accumulated
+      description: >-
+        Prepare an accumulator which can be used in templates in file.managed
+        or file.blockreplace states. The accumulator dictionary becomes
+        available in the template. Must be used together with require_in or
+        watch_in to ensure the accumulator is filled before the file is managed.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Accumulator name, used to reference it in templates."
+          default_value: ~
+        - name: filename
+          type: string
+          required: true
+          description: "Absolute path of the file that will receive this accumulator (same as name in file.managed)."
+          default_value: ~
+        - name: text
+          type: string
+          required: true
+          description: "String or list of strings to add to the accumulator."
+          default_value: ~
+      examples:
+        - |
+          animals_doing_things:
+            file.accumulated:
+              - filename: /tmp/animal_file.txt
+              - text: ' jumps over the lazy dog.'
+              - require_in:
+                - file: animal_file
+
+          animal_file:
+            file.managed:
+              - name: /tmp/animal_file.txt
+              - source: salt://animal_file.txt
+              - template: jinja
+
+    - name: append
+      description: >-
+        Ensure that some text appears at the end of a file. The text will
+        not be appended if it already exists in the file. Accepts a single
+        string or a list of strings. Whitespace differences are ignored by
+        default when checking for existing content.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file to append to."
+          default_value: ~
+        - name: text
+          type: string
+          required: false
+          description: "Text to append. Can be a single string or a list of strings."
+          default_value: ~
+        - name: makedirs
+          type: bool
+          required: false
+          description: "If True, create missing parent directories before appending."
+          default_value: "false"
+        - name: source
+          type: string
+          required: false
+          description: >-
+            A single source file to append. Supports salt://, http(s)://,
+            ftp://, and S3/Swift URLs. Requires source_hash if hosted on
+            HTTP/FTP.
+          default_value: ~
+        - name: source_hash
+          type: string
+          required: false
+          description: "Hash string or URI to a hash file for verifying the source."
+          default_value: ~
+        - name: template
+          type: string
+          required: false
+          description: "Template engine to use when rendering the source file."
+          default_value: "jinja"
+        - name: sources
+          type: list
+          required: false
+          description: "List of source files to append."
+          default_value: ~
+        - name: source_hashes
+          type: list
+          required: false
+          description: "List of hashes corresponding to the sources list."
+          default_value: ~
+        - name: defaults
+          type: dict
+          required: false
+          description: "Default context passed to the template."
+          default_value: ~
+        - name: context
+          type: dict
+          required: false
+          description: "Overrides default context variables passed to the template."
+          default_value: ~
+        - name: ignore_whitespace
+          type: bool
+          required: false
+          description: >-
+            If True (default), spaces and tabs in text are treated as equivalent
+            when searching for existing content. Set to False for strict matching.
+          default_value: "true"
+      examples:
+        - |
+          /etc/motd:
+            file.append:
+              - text: |
+                  Thou hadst better eat salt with the Philosophers of Greece,
+                  than sugar with the Courtiers of Italy.
+                  - Benjamin Franklin
+        - |
+          /etc/motd:
+            file.append:
+              - text:
+                - Trust no one unless you have eaten much salt with him.
+                - "Salt is born of the purest of parents: the sun and the sea."
+
+    - name: blockreplace
+      description: >-
+        Maintain an edit in a file within a zone delimited by two line markers.
+        Replaces the content between marker_start and marker_end on each run.
+        Can also be used together with file.accumulated to build the block content
+        dynamically.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file to edit."
+          default_value: ~
+        - name: marker_start
+          type: string
+          required: false
+          description: "Line marker identifying the start of the managed content block."
+          default_value: "#-- start managed zone --"
+        - name: marker_end
+          type: string
+          required: false
+          description: "Line marker identifying the end of the managed content block."
+          default_value: "#-- end managed zone --"
+        - name: content
+          type: string
+          required: false
+          description: "Content to place between the two markers."
+          default_value: ""
+        - name: source
+          type: string
+          required: false
+          description: >-
+            Source file whose content will be used between the markers.
+            Supports salt://, http(s)://, ftp://, and S3/Swift URLs.
+          default_value: ~
+        - name: source_hash
+          type: string
+          required: false
+          description: "Hash string or URI to a hash file for verifying the source."
+          default_value: ~
+        - name: template
+          type: string
+          required: false
+          description: "Template engine to use when rendering the source."
+          default_value: "jinja"
+        - name: sources
+          type: list
+          required: false
+          description: "List of source files whose content will be placed between the markers."
+          default_value: ~
+        - name: source_hashes
+          type: list
+          required: false
+          description: "List of hashes corresponding to the sources list."
+          default_value: ~
+        - name: context
+          type: dict
+          required: false
+          description: "Overrides default context variables passed to the template."
+          default_value: ~
+        - name: defaults
+          type: dict
+          required: false
+          description: "Default context passed to the template."
+          default_value: ~
+        - name: append_if_not_found
+          type: bool
+          required: false
+          description: "If True and markers are not found, append the content block to the file."
+          default_value: "false"
+        - name: prepend_if_not_found
+          type: bool
+          required: false
+          description: "If True and markers are not found, prepend the content block to the file."
+          default_value: "false"
+        - name: insert_before_match
+          type: string
+          required: false
+          description: >-
+            If markers are not found, insert the block before the first line
+            matching this regex.
+          default_value: ~
+        - name: insert_after_match
+          type: string
+          required: false
+          description: >-
+            If markers are not found, insert the block after the first line
+            matching this regex.
+          default_value: ~
+        - name: backup
+          type: string
+          required: false
+          description: "File extension for backup before editing. Set to False to skip backup."
+          default_value: ".bak"
+        - name: show_changes
+          type: bool
+          required: false
+          description: >-
+            If True, show a unified diff of changes. If False, return a boolean
+            indicating whether any changes were made.
+          default_value: "true"
+        - name: append_newline
+          type: bool
+          required: false
+          description: >-
+            Controls whether a newline is appended to the content block.
+            If unspecified, a newline is added only if the content does not
+            already end with one.
+          default_value: ~
+      examples:
+        - |
+          {% set myvar = 42 %}
+          hosts-config-block-{{ myvar }}:
+            file.blockreplace:
+              - name: /etc/hosts
+              - marker_start: "# START managed zone {{ myvar }} -DO-NOT-EDIT-"
+              - marker_end: "# END managed zone {{ myvar }} --"
+              - content: 'First line of content'
+              - append_if_not_found: True
+              - backup: '.bak'
+              - show_changes: True
+
+    - name: cached
+      description: >-
+        Ensure that a file is saved to the minion's cache. Primarily invoked
+        by other states to avoid re-downloading a source file unnecessarily.
+        Not typically useful in SLS files directly.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: >-
+            URL of the file to cache. Supports salt://, http(s)://, ftp://, etc.
+            Must be a single URL (lists not supported).
+          default_value: ~
+        - name: source_hash
+          type: string
+          required: false
+          description: "Hash string or URI to a hash file for verifying the cached file."
+          default_value: ""
+        - name: source_hash_name
+          type: string
+          required: false
+          description: "Filename to match in the hash file when source_hash is a URI."
+          default_value: ~
+        - name: skip_verify
+          type: bool
+          required: false
+          description: >-
+            If True, skip hash verification. Note: causes re-download on every
+            run for remote (non-salt://) sources.
+          default_value: "false"
+        - name: saltenv
+          type: string
+          required: false
+          description: "Salt environment to use when downloading from the Salt fileserver."
+          default_value: "base"
+        - name: use_etag
+          type: bool
+          required: false
+          description: >-
+            If True, use the ETag header to determine if the remote file needs
+            to be re-downloaded.
+          default_value: "false"
+        - name: source_hash_sig
+          type: string
+          required: false
+          description: "Ensure a valid signature exists on the source hash file."
+          default_value: ~
+        - name: signed_by_any
+          type: list
+          required: false
+          description: "Require at least one valid signature from one of these keys."
+          default_value: ~
+        - name: signed_by_all
+          type: list
+          required: false
+          description: "Require a valid signature from every key in this list."
+          default_value: ~
+        - name: keyring
+          type: string
+          required: false
+          description: "Keyring to use when verifying signatures."
+          default_value: ~
+        - name: gnupghome
+          type: string
+          required: false
+          description: "GnuPG home directory to use when verifying signatures."
+          default_value: ~
+        - name: sig_backend
+          type: string
+          required: false
+          description: "Execution module backend for signature verification."
+          default_value: "gpg"
+      examples:
+        - |
+          cache_myfile:
+            file.cached:
+              - name: salt://path/to/file.conf
+              - source_hash: abc123...
+
+    - name: comment
+      description: >-
+        Comment out specified lines in a file using a regex pattern. Note that
+        a leading ^ in the pattern is required to prevent duplicate comment
+        characters being added on each run.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file to edit."
+          default_value: ~
+        - name: regex
+          type: string
+          required: true
+          description: >-
+            Regular expression to find lines to comment out. The pattern will
+            be wrapped in parentheses; leading/trailing ^ and $ are moved
+            outside. A leading ^ is required to prevent duplicate comment
+            characters on repeated runs.
+          default_value: ~
+        - name: char
+          type: string
+          required: false
+          description: "Comment character to insert at the beginning of matched lines."
+          default_value: "#"
+        - name: backup
+          type: string
+          required: false
+          description: "File extension for backup before editing. Set to False/None to skip."
+          default_value: ".bak"
+        - name: ignore_missing
+          type: bool
+          required: false
+          description: >-
+            If True, ignore a failure to find the regex in the file. Useful when
+            the line should only be commented if it exists.
+          default_value: "false"
+      examples:
+        - |
+          /etc/fstab:
+            file.comment:
+              - regex: ^bind 127.0.0.1
+
+    - name: copy
+      description: >-
+        Copy a file from one location on the minion to another location on
+        the same minion. The file will not be overwritten if it already exists
+        unless force=True. Note: use file.managed to copy files from the master.
+        In SLS, use "file.copy" (not "file.copy_").
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path to copy the file to."
+          default_value: ~
+        - name: source
+          type: string
+          required: true
+          description: "Absolute path of the file to copy from (must be local to the minion)."
+          default_value: ~
+        - name: force
+          type: bool
+          required: false
+          description: "If True, overwrite the destination file if it already exists."
+          default_value: "false"
+        - name: makedirs
+          type: bool
+          required: false
+          description: "If True, create missing parent directories of the destination."
+          default_value: "false"
+        - name: preserve
+          type: bool
+          required: false
+          description: >-
+            If True, preserve user/group ownership and mode after copying.
+            When True, user/group/mode parameters are ignored.
+          default_value: "false"
+        - name: user
+          type: string
+          required: false
+          description: "User to own the copied file. Ignored if preserve=True."
+          default_value: ~
+        - name: group
+          type: string
+          required: false
+          description: "Group to own the copied file. Ignored if preserve=True or on Windows."
+          default_value: ~
+        - name: mode
+          type: string
+          required: false
+          description: >-
+            Permissions to set on the copied file (e.g. 644, 0775). Ignored if
+            preserve=True. Not supported on Windows.
+          default_value: ~
+        - name: dir_mode
+          type: string
+          required: false
+          description: >-
+            Permissions to set on directories created when makedirs=True.
+            If not set, directories get the file mode with the execute bit added.
+          default_value: ~
+        - name: subdir
+          type: bool
+          required: false
+          description: "If name is a directory, place the file inside the named directory."
+          default_value: "false"
+      examples:
+        - |
+          /etc/example.conf:
+            file.copy:
+              - source: /tmp/example.conf
+
+    - name: decode
+      description: >-
+        Decode an encoded file and write it to disk. Supports base64 encoding.
+        Either encoded_data or contents_pillar must be specified.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file to write."
+          default_value: ~
+        - name: encoded_data
+          type: string
+          required: false
+          description: "The encoded file contents. Either this or contents_pillar must be specified."
+          default_value: ~
+        - name: contents_pillar
+          type: string
+          required: false
+          description: >-
+            Pillar path to the encoded file contents, using pillar.get syntax.
+            Either this or encoded_data must be specified.
+          default_value: ~
+        - name: encoding_type
+          type: string
+          required: false
+          description: "The encoding type to use for decoding."
+          default_value: "base64"
+        - name: checksum
+          type: string
+          required: false
+          description: "Hashing algorithm to use for generating checksums."
+          default_value: "md5"
+      examples:
+        - |
+          write_base64_encoded_string_to_a_file:
+            file.decode:
+              - name: /tmp/new_file
+              - encoding_type: base64
+              - contents_pillar: mypillar:thefile
+
+    - name: directory
+      description: >-
+        Ensure that a named directory is present and has the correct permissions,
+        ownership, and contents. Supports recursive permission enforcement and
+        optional cleanup of unmanaged files.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the directory to create or manage."
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "User to own the directory."
+          default_value: ~
+        - name: group
+          type: string
+          required: false
+          description: "Group to own the directory. Ignored on Windows."
+          default_value: ~
+        - name: recurse
+          type: list
+          required: false
+          description: >-
+            Enforce ownership and mode recursively. Accepts a list of strings:
+            "user", "group", "mode", "ignore_files", "ignore_dirs", "silent".
+          default_value: ~
+        - name: max_depth
+          type: int
+          required: false
+          description: >-
+            Limit recursion depth. Mutually exclusive with clean.
+          default_value: ~
+        - name: dir_mode
+          type: string
+          required: false
+          description: "Permissions mode to set on directories. Not supported on Windows."
+          default_value: ~
+        - name: file_mode
+          type: string
+          required: false
+          description: >-
+            Permissions mode to set on files when recurse includes "mode".
+            Defaults to dir_mode. Not supported on Windows.
+          default_value: ~
+        - name: makedirs
+          type: bool
+          required: false
+          description: "If True, create missing parent directories."
+          default_value: "false"
+        - name: clean
+          type: bool
+          required: false
+          description: >-
+            If True, remove any files not managed by a required file state.
+            Mutually exclusive with max_depth.
+          default_value: "false"
+        - name: require
+          type: list
+          required: false
+          description: "Require other resources such as packages or files."
+          default_value: ~
+        - name: exclude_pat
+          type: string
+          required: false
+          description: "When clean=True, exclude files matching this pattern from removal."
+          default_value: ~
+        - name: follow_symlinks
+          type: bool
+          required: false
+          description: >-
+            If True, follow symlinks and enforce permissions on the symlink target.
+          default_value: "false"
+        - name: force
+          type: bool
+          required: false
+          description: >-
+            If a non-directory exists at name, fail unless force=True, in which
+            case it is deleted (or renamed if backupname is set).
+          default_value: "false"
+        - name: backupname
+          type: string
+          required: false
+          description: >-
+            If a non-directory exists at name, rename it to this path instead
+            of deleting it.
+          default_value: ~
+        - name: allow_symlink
+          type: bool
+          required: false
+          description: >-
+            If True, a symlink pointing to a directory is allowed to remain at
+            name. If False, it will be replaced (or backed up if force=True).
+          default_value: "true"
+        - name: children_only
+          type: bool
+          required: false
+          description: >-
+            If True, exclude the base directory itself from recursive operations.
+          default_value: "false"
+        - name: win_owner
+          type: string
+          required: false
+          description: "Owner of the directory on Windows."
+          default_value: ~
+        - name: win_perms
+          type: dict
+          required: false
+          description: "Dictionary of permissions to grant on Windows."
+          default_value: ~
+        - name: win_deny_perms
+          type: dict
+          required: false
+          description: "Dictionary of permissions to deny on Windows."
+          default_value: ~
+        - name: win_inheritance
+          type: bool
+          required: false
+          description: "True to inherit permissions from parent directory on Windows."
+          default_value: "true"
+        - name: win_perms_reset
+          type: bool
+          required: false
+          description: >-
+            If True, clear the existing DACL and replace with the settings
+            defined here. If False, new entries are appended.
+          default_value: "false"
+      examples:
+        - |
+          /var/log/httpd:
+            file.directory:
+              - user: root
+              - group: root
+              - dir_mode: 755
+              - file_mode: 644
+              - recurse:
+                - user
+                - group
+                - mode
+        - |
+          /etc/ssl/certs:
+            file.directory:
+              - makedirs: True
+              - user: root
+              - group: root
+              - mode: 755
+
+    - name: hardlink
+      description: >-
+        Create a hard link. If the file already exists and is a hard link pointing
+        to a different target, it will be replaced. If it is a regular file or
+        directory, the state returns False unless force=True.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the hard link to create."
+          default_value: ~
+        - name: target
+          type: string
+          required: true
+          description: "Absolute path the hard link should point to."
+          default_value: ~
+        - name: force
+          type: bool
+          required: false
+          description: >-
+            If True, delete the file or directory at name to make room for
+            the hard link.
+          default_value: "false"
+        - name: makedirs
+          type: bool
+          required: false
+          description: "If True, create missing parent directories of the hard link."
+          default_value: "false"
+        - name: user
+          type: string
+          required: false
+          description: "User to own any directories created when makedirs=True."
+          default_value: ~
+        - name: group
+          type: string
+          required: false
+          description: "Group to own any directories created when makedirs=True. Ignored on Windows."
+          default_value: ~
+        - name: dir_mode
+          type: string
+          required: false
+          description: "Permissions for directories created when makedirs=True."
+          default_value: ~
+      examples:
+        - |
+          symlink_/tmp/saltylink:
+            file.hardlink:
+              - name: /tmp/saltylink
+              - target: /tmp/saltyfile
+
+    - name: keyvalue
+      description: >-
+        Key/value based editing of a file. Searches for keys followed by a
+        customizable separator and sets the value. No changes are made if the
+        value already matches. Supply either key+value or key_values dict.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file to search and edit."
+          default_value: ~
+        - name: key
+          type: string
+          required: false
+          description: "Key to search for. Use together with value parameter."
+          default_value: ~
+        - name: value
+          type: string
+          required: false
+          description: "Value to set for the given key. Use together with key parameter."
+          default_value: ~
+        - name: key_values
+          type: dict
+          required: false
+          description: "Dictionary of key/value pairs to set. Alternative to key+value."
+          default_value: ~
+        - name: separator
+          type: string
+          required: false
+          description: "Separator between key and value."
+          default_value: "="
+        - name: append_if_not_found
+          type: bool
+          required: false
+          description: "If True, append the key/value to the end of the file if not found. Takes precedence over prepend_if_not_found."
+          default_value: "false"
+        - name: prepend_if_not_found
+          type: bool
+          required: false
+          description: "If True, prepend the key/value to the beginning of the file if not found."
+          default_value: "false"
+        - name: search_only
+          type: bool
+          required: false
+          description: "If True, only search for the key without making changes."
+          default_value: "false"
+        - name: show_changes
+          type: bool
+          required: false
+          description: "Show a diff of the resulting changes."
+          default_value: "true"
+        - name: ignore_if_missing
+          type: bool
+          required: false
+          description: "Return success even if the file is not found or not readable."
+          default_value: "false"
+        - name: count
+          type: int
+          required: false
+          description: >-
+            Number of occurrences to allow and correct. Default 1.
+            Set to -1 to replace all, or 0 to remove all lines with this key.
+          default_value: "1"
+        - name: uncomment
+          type: string
+          required: false
+          description: >-
+            Characters to strip from the beginning of lines when searching for keys.
+            When None, commented lines are left as-is.
+          default_value: ~
+        - name: key_ignore_case
+          type: bool
+          required: false
+          description: "Match keys case-insensitively. The matched key casing is preserved."
+          default_value: "false"
+        - name: value_ignore_case
+          type: bool
+          required: false
+          description: "Check values case-insensitively."
+          default_value: "false"
+        - name: create_if_missing
+          type: bool
+          required: false
+          description: "Create the file if it does not exist."
+          default_value: "false"
+        - name: prune
+          type: bool
+          required: false
+          description: "Delete lines not matching key or any key in key_values."
+          default_value: "false"
+      examples:
+        - |
+          sshd_config_harden:
+            file.keyvalue:
+              - name: /etc/ssh/sshd_config
+              - key_values:
+                  permitrootlogin: 'without-password'
+                  LoginGraceTime: '1m'
+                  DisableForwarding: 'yes'
+              - separator: ' '
+              - uncomment: '# '
+              - key_ignore_case: True
+              - append_if_not_found: True
+
+    - name: line
+      description: >-
+        Line-focused editing of a file. Can remove, add, or replace lines.
+        Note: file.replace is generally more suitable. file.line is primarily
+        useful for managing individual lines in config files.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file to edit."
+          default_value: ~
+        - name: content
+          type: string
+          required: false
+          description: "Content of the line. Can be empty when mode=delete."
+          default_value: ~
+        - name: match
+          type: string
+          required: false
+          description: >-
+            Fragment or regex to match the target line. Falls back to content
+            if neither match, before, nor after are provided.
+          default_value: ~
+        - name: mode
+          type: string
+          required: true
+          description: >-
+            How to edit the line. One of: "ensure" (add if absent, fail if
+            non-matching lines exist between before/after), "replace" (replace
+            matched line), "delete" (remove matched line), "insert" (add if
+            absent, allows non-matching lines between before/after).
+          default_value: ~
+        - name: location
+          type: string
+          required: false
+          description: >-
+            In mode=insert only, where to place content: "start" or "end"
+            of file. Takes precedence over before/after.
+          default_value: ~
+        - name: before
+          type: string
+          required: false
+          description: >-
+            Regex or exact string to match the line before which content is
+            inserted. Used in ensure and insert modes. Must match exactly one line.
+          default_value: ~
+        - name: after
+          type: string
+          required: false
+          description: >-
+            Regex or exact string to match the line after which content is
+            inserted. Used in ensure and insert modes. Must match exactly one line.
+          default_value: ~
+        - name: show_changes
+          type: bool
+          required: false
+          description: "Output a unified diff of changes. If False, return a boolean."
+          default_value: "true"
+        - name: backup
+          type: bool
+          required: false
+          description: "Create a timestamped backup of the original file before editing."
+          default_value: "false"
+        - name: quiet
+          type: bool
+          required: false
+          description: "Do not raise exceptions (e.g. if the file does not exist)."
+          default_value: "false"
+        - name: indent
+          type: bool
+          required: false
+          description: >-
+            Keep indentation matching the previous line. Not used in delete mode.
+          default_value: "true"
+        - name: create
+          type: bool
+          required: false
+          description: "Create an empty file if it does not exist."
+          default_value: "false"
+        - name: user
+          type: string
+          required: false
+          description: "User to own the file."
+          default_value: ~
+        - name: group
+          type: string
+          required: false
+          description: "Group to own the file. Ignored on Windows."
+          default_value: ~
+        - name: file_mode
+          type: string
+          required: false
+          description: "Permissions to set on the file (e.g. 644). Not supported on Windows."
+          default_value: ~
+      examples:
+        - |
+          update_config:
+            file.line:
+              - name: /etc/myconfig.conf
+              - mode: ensure
+              - content: my key = my value
+              - before: somekey.*?
+        - |
+          remove_lines:
+            file.line:
+              - name: /some/file.conf
+              - mode: delete
+              - match: away
+
+    - name: missing
+      description: >-
+        Verify that the named file or directory is missing. Returns True only
+        if the path does not exist. Does NOT remove the file if it is present
+        — use file.absent for that.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path which must NOT exist on the minion."
+          default_value: ~
+      examples:
+        - |
+          missing_/tmp/saltyfile:
+            file.missing:
+              - name: /tmp/saltyfile
+
+    - name: mknod
+      description: >-
+        Create a special file (device node or FIFO pipe), similar to the
+        Unix mknod command. Supported types: p (fifo), c (character device),
+        b (block device). Usually requires root. Will not overwrite an existing
+        file of the same name if it differs in type/major/minor.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the special file to create."
+          default_value: ~
+        - name: ntype
+          type: string
+          required: true
+          description: "Node type: 'p' (fifo pipe), 'c' (character device), or 'b' (block device)."
+          default_value: ~
+        - name: major
+          type: int
+          required: false
+          description: "Major device number. Does not apply to fifo pipes."
+          default_value: "0"
+        - name: minor
+          type: int
+          required: false
+          description: "Minor device number. Does not apply to fifo pipes."
+          default_value: "0"
+        - name: user
+          type: string
+          required: false
+          description: "Owning user of the device/pipe."
+          default_value: ~
+        - name: group
+          type: string
+          required: false
+          description: "Owning group of the device/pipe."
+          default_value: ~
+        - name: mode
+          type: string
+          required: false
+          description: "Permissions on the device/pipe."
+          default_value: "0600"
+      examples:
+        - |
+          /dev/chr:
+            file.mknod:
+              - ntype: c
+              - major: 180
+              - minor: 31
+              - user: root
+              - group: root
+              - mode: 660
+        - |
+          /dev/fifo:
+            file.mknod:
+              - ntype: p
+              - user: root
+              - group: root
+              - mode: 660
+
+    - name: patch
+      description: >-
+        Ensure that a patch has been applied to a specified file or directory.
+        Supports multi-file patches when name points to a directory.
+        Requires a suitable patch executable on the minion.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file or directory to patch."
+          default_value: ~
+        - name: source
+          type: string
+          required: false
+          description: >-
+            The patch file to apply. Supports all Salt file sources:
+            salt://, http(s)://, ftp://, etc. Templating is also supported.
+          default_value: ~
+        - name: source_hash
+          type: string
+          required: false
+          description: "Hash string or URI to a hash file for verifying the patch source."
+          default_value: ~
+        - name: source_hash_name
+          type: string
+          required: false
+          description: "Filename to match in the hash file when source_hash is a URI."
+          default_value: ~
+        - name: skip_verify
+          type: bool
+          required: false
+          description: "Skip hash verification of the patch source."
+          default_value: "false"
+        - name: template
+          type: string
+          required: false
+          description: "Template engine to use when rendering the patch source."
+          default_value: ~
+        - name: context
+          type: dict
+          required: false
+          description: "Overrides default context variables passed to the template."
+          default_value: ~
+        - name: defaults
+          type: dict
+          required: false
+          description: "Default context passed to the template."
+          default_value: ~
+        - name: options
+          type: string
+          required: false
+          description: >-
+            Extra options to pass to the patch command. Note: -N, -r, -o are
+            used internally and cannot be used here. Use strip instead of -pN.
+          default_value: ""
+        - name: reject_file
+          type: string
+          required: false
+          description: >-
+            If specified, write rejected hunks to this file. The parent
+            directory must exist. Will overwrite any existing file at this path.
+          default_value: ~
+        - name: strip
+          type: int
+          required: false
+          description: >-
+            Number of leading path components to strip from filenames in the
+            patch (equivalent to patch -pN).
+          default_value: ~
+        - name: saltenv
+          type: string
+          required: false
+          description: >-
+            Salt environment for the source patch file. Ignored for non-salt://
+            sources.
+          default_value: ~
+      examples:
+        - |
+          /opt/myfile.txt:
+            file.patch:
+              - source: salt://myfile.patch
+        - |
+          /etc/myfile.conf:
+            file.patch:
+              - source: salt://myfile.patch
+              - strip: 1
+
+    - name: prepend
+      description: >-
+        Ensure that some text appears at the beginning of a file. The text will
+        not be prepended again if it already exists in the file. Accepts a single
+        string or a list of strings.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file to prepend to."
+          default_value: ~
+        - name: text
+          type: string
+          required: false
+          description: "Text to prepend. Can be a single string or a list of strings."
+          default_value: ~
+        - name: makedirs
+          type: bool
+          required: false
+          description: "If True, create missing parent directories before prepending."
+          default_value: "false"
+        - name: source
+          type: string
+          required: false
+          description: "A single source file to prepend. Supports salt://, http(s)://, ftp://, etc."
+          default_value: ~
+        - name: source_hash
+          type: string
+          required: false
+          description: "Hash string or URI to a hash file for verifying the source."
+          default_value: ~
+        - name: template
+          type: string
+          required: false
+          description: "Template engine to use when rendering source files."
+          default_value: "jinja"
+        - name: sources
+          type: list
+          required: false
+          description: "List of source files to prepend."
+          default_value: ~
+        - name: source_hashes
+          type: list
+          required: false
+          description: "List of hashes corresponding to the sources list."
+          default_value: ~
+        - name: defaults
+          type: dict
+          required: false
+          description: "Default context passed to the template."
+          default_value: ~
+        - name: context
+          type: dict
+          required: false
+          description: "Overrides default context variables passed to the template."
+          default_value: ~
+        - name: header
+          type: bool
+          required: false
+          description: >-
+            If True, force the text to be prepended even if it already exists
+            elsewhere in the file (prepends a duplicate).
+          default_value: ~
+      examples:
+        - |
+          /etc/motd:
+            file.prepend:
+              - text: |
+                  Thou hadst better eat salt with the Philosophers of Greece,
+                  than sugar with the Courtiers of Italy.
+                  - Benjamin Franklin
+        - |
+          /etc/motd:
+            file.prepend:
+              - header: True
+              - text:
+                - This will be the very first line in the file.
+                - The 2nd line, regardless of duplicates elsewhere in the file.
+
+    - name: pruned
+      description: >-
+        Ensure that a named directory is absent by deleting it if it is empty.
+        An entire tree of empty directories can be pruned using recurse=True.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the directory to delete if empty."
+          default_value: ~
+        - name: recurse
+          type: bool
+          required: false
+          description: >-
+            If True, recursively delete empty subdirectories. Useful when nested
+            paths are all empty.
+          default_value: "false"
+        - name: ignore_errors
+          type: bool
+          required: false
+          description: >-
+            If True, ignore errors during deletion. Automatically enables recurse.
+            Useful for pruning only empty directories within a tree that also
+            contains non-empty ones.
+          default_value: "false"
+        - name: older_than
+          type: int
+          required: false
+          description: >-
+            Number of days that must have passed since the last modification
+            before a directory is eligible for removal. 0 is equivalent to None.
+          default_value: ~
+      examples:
+        - |
+          /tmp/empty_dirs:
+            file.pruned:
+              - recurse: True
+              - ignore_errors: True
+
+    - name: rename
+      description: >-
+        Rename (move) a file on the minion. If the source file exists, it will
+        be renamed to the destination. The destination will not be overwritten
+        unless force=True.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path to rename the file to."
+          default_value: ~
+        - name: source
+          type: string
+          required: true
+          description: "Absolute path of the file to rename."
+          default_value: ~
+        - name: force
+          type: bool
+          required: false
+          description: "If True, overwrite the destination if it already exists."
+          default_value: "false"
+        - name: makedirs
+          type: bool
+          required: false
+          description: "If True, create missing parent directories of the destination."
+          default_value: "false"
+      examples:
+        - |
+          /etc/config.new:
+            file.rename:
+              - source: /etc/config.bak
+              - force: True
+
+    - name: retention_schedule
+      description: >-
+        Apply retention scheduling to a backup storage directory, deleting old
+        backups while keeping a specified number of recent, hourly, daily,
+        weekly, monthly, and yearly backups.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the directory containing backups to manage."
+          default_value: ~
+        - name: retain
+          type: dict
+          required: true
+          description: >-
+            Dictionary specifying retention policy. Keys: most_recent,
+            first_of_hour, first_of_day, first_of_week, first_of_month,
+            first_of_year. Values are integers or "all".
+          default_value: ~
+        - name: strptime_format
+          type: string
+          required: false
+          description: >-
+            Python strptime format string to match backup filenames and parse
+            their datetime. If None, all files are eligible and mtime is used.
+          default_value: ~
+        - name: timezone
+          type: string
+          required: false
+          description: >-
+            Timezone for determining midnight when using mtime-based datetime.
+            Defaults to system locale timezone.
+          default_value: ~
+      examples:
+        - |
+          /var/backups/example_directory:
+            file.retention_schedule:
+              - retain:
+                  most_recent: 5
+                  first_of_hour: 4
+                  first_of_day: 7
+                  first_of_month: 6
+                  first_of_year: all
+              - strptime_format: example_name_%Y%m%dT%H%M%S.tar.bz2
+
+    - name: serialize
+      description: >-
+        Serialize a dataset and store it in a managed file. Supports json, yaml,
+        python, msgpack, and other serialization formats. Useful for managing
+        simple structured configuration files.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file to create or manage."
+          default_value: ~
+        - name: dataset
+          type: dict
+          required: false
+          description: "The dataset to serialize and write to the file."
+          default_value: ~
+        - name: dataset_pillar
+          type: string
+          required: false
+          description: >-
+            Pillar path to the dataset, using pillar.get syntax. Alternative to
+            the dataset parameter.
+          default_value: ~
+        - name: serializer
+          type: string
+          required: false
+          description: "Serialization format (e.g. json, yaml, python, msgpack)."
+          default_value: ~
+        - name: user
+          type: string
+          required: false
+          description: "User to own the file."
+          default_value: ~
+        - name: group
+          type: string
+          required: false
+          description: "Group to own the file."
+          default_value: ~
+        - name: mode
+          type: string
+          required: false
+          description: "Permissions mode (e.g. 644). Not supported on Windows."
+          default_value: ~
+        - name: backup
+          type: string
+          required: false
+          description: "Overrides the default backup mode for this file."
+          default_value: ""
+        - name: makedirs
+          type: bool
+          required: false
+          description: "If True, create missing parent directories."
+          default_value: "false"
+        - name: show_changes
+          type: bool
+          required: false
+          description: "Output a unified diff of changes. If False, return a boolean."
+          default_value: "true"
+        - name: create
+          type: bool
+          required: false
+          description: "If False, only manage the file if it already exists."
+          default_value: "true"
+        - name: merge_if_exists
+          type: bool
+          required: false
+          description: >-
+            If True, parse the existing file and merge the dataset into the
+            existing content before re-serializing.
+          default_value: "false"
+        - name: encoding
+          type: string
+          required: false
+          description: "File encoding to use. Defaults to system locale (usually UTF-8)."
+          default_value: ~
+        - name: encoding_errors
+          type: string
+          required: false
+          description: "Error handling scheme for encoding."
+          default_value: "strict"
+        - name: serializer_opts
+          type: list
+          required: false
+          description: "Additional options to pass to the serializer function."
+          default_value: ~
+        - name: deserializer_opts
+          type: list
+          required: false
+          description: >-
+            Additional options to pass to the deserializer when merge_if_exists=True.
+          default_value: ~
+        - name: check_cmd
+          type: string
+          required: false
+          description: >-
+            Command to run against a temporary copy of the new file contents
+            before applying changes. If exit code is non-zero, the state fails.
+          default_value: ~
+        - name: tmp_dir
+          type: string
+          required: false
+          description: "Directory for the temp file created by check_cmd."
+          default_value: ~
+        - name: tmp_ext
+          type: string
+          required: false
+          description: "Suffix for the temp file created by check_cmd."
+          default_value: ""
+      examples:
+        - |
+          /etc/dummy/package.json:
+            file.serialize:
+              - dataset:
+                  name: naive
+                  description: A package using naive versioning
+                  dependencies:
+                    express: '>= 1.2.0'
+              - serializer: json
+        - |
+          /etc/consul.d/my_config.json:
+            file.serialize:
+              - dataset:
+                  datacenter: "east-aws"
+                  data_dir: "/opt/consul"
+                  server: true
+              - serializer: json
+              - check_cmd: consul validate
+
+    - name: shortcut
+      description: >-
+        Create a Windows shortcut (.lnk or .url file). If the file already exists
+        and is a shortcut pointing elsewhere, it will be replaced. Only available
+        on Windows.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the shortcut to create. Must end with .lnk or .url."
+          default_value: ~
+        - name: target
+          type: string
+          required: true
+          description: "Path that the shortcut points to."
+          default_value: ~
+        - name: arguments
+          type: string
+          required: false
+          description: "Arguments to pass when the shortcut is executed."
+          default_value: ~
+        - name: working_dir
+          type: string
+          required: false
+          description: "Working directory in which to execute the target."
+          default_value: ~
+        - name: description
+          type: string
+          required: false
+          description: "Description to set on the shortcut."
+          default_value: ~
+        - name: icon_location
+          type: string
+          required: false
+          description: "Path to the shortcut's icon."
+          default_value: ~
+        - name: force
+          type: bool
+          required: false
+          description: >-
+            If a non-shortcut file exists at name and force=True, it will be
+            deleted (or renamed if backupname is set).
+          default_value: "false"
+        - name: backupname
+          type: string
+          required: false
+          description: >-
+            If a non-shortcut exists at name, rename it to this path.
+          default_value: ~
+        - name: makedirs
+          type: bool
+          required: false
+          description: "If True, create missing parent directories of the shortcut."
+          default_value: "false"
+        - name: user
+          type: string
+          required: false
+          description: "User to own the shortcut file."
+          default_value: ~
+      examples:
+        - |
+          C:\Users\Public\Desktop\MyApp.lnk:
+            file.shortcut:
+              - target: C:\Program Files\MyApp\myapp.exe
+              - description: My Application
+              - makedirs: True
+
+    - name: symlink
+      description: >-
+        Create a symbolic link. If a symlink already exists pointing to a
+        different target, it will be replaced. If a non-symlink entry exists,
+        the state returns False unless force=True (which will delete or rename it).
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the symlink to create."
+          default_value: ~
+        - name: target
+          type: string
+          required: true
+          description: "Path that the symlink should point to."
+          default_value: ~
+        - name: force
+          type: bool
+          required: false
+          description: >-
+            If a non-symlink entry exists at name and force=True, it will be
+            deleted (or renamed if backupname is set).
+          default_value: "false"
+        - name: backupname
+          type: string
+          required: false
+          description: >-
+            If a non-symlink exists at name, rename it to this path. Accepts
+            an absolute path or a basename relative to the symlink's parent.
+          default_value: ~
+        - name: makedirs
+          type: bool
+          required: false
+          description: "If True, create missing parent directories of the symlink."
+          default_value: "false"
+        - name: user
+          type: string
+          required: false
+          description: "User to own the symlink."
+          default_value: ~
+        - name: group
+          type: string
+          required: false
+          description: "Group to own the symlink. Ignored on Windows."
+          default_value: ~
+        - name: mode
+          type: string
+          required: false
+          description: "Permissions on the symlink. Not supported on Windows."
+          default_value: ~
+        - name: win_owner
+          type: string
+          required: false
+          description: "Owner of the symlink and any makedirs directories on Windows."
+          default_value: ~
+        - name: win_perms
+          type: dict
+          required: false
+          description: "Dictionary of permissions to grant on Windows."
+          default_value: ~
+        - name: win_deny_perms
+          type: dict
+          required: false
+          description: "Dictionary of permissions to deny on Windows."
+          default_value: ~
+        - name: win_inheritance
+          type: bool
+          required: false
+          description: "True to inherit permissions from parent on Windows."
+          default_value: ~
+        - name: atomic
+          type: bool
+          required: false
+          description: "Use atomic file operation to create the symlink."
+          default_value: "false"
+        - name: disallow_copy_and_unlink
+          type: bool
+          required: false
+          description: >-
+            Only used with backupname. If True, use os.rename (fails across
+            filesystems). If False, use shutil.move (supports cross-filesystem).
+          default_value: "false"
+        - name: inherit_user_and_group
+          type: bool
+          required: false
+          description: >-
+            If True and the link already exists, pull user/group from the
+            existing link when user/group are not explicitly set.
+          default_value: "false"
+        - name: follow_symlinks
+          type: bool
+          required: false
+          description: >-
+            If False, use os.path.lexists() instead of os.path.exists() for
+            existence checks.
+          default_value: "true"
+      examples:
+        - |
+          /tmp/saltylink:
+            file.symlink:
+              - target: /tmp/saltyfile
+        - |
+          /etc/nginx/sites-enabled/mysite:
+            file.symlink:
+              - target: /etc/nginx/sites-available/mysite
+              - makedirs: True
+
+    - name: tidied
+      description: >-
+        Remove unwanted files from a directory tree based on age, size, and/or
+        name patterns. By default uses an OR condition for age and size (a file
+        matching either criterion is removed).
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the directory tree to tidy."
+          default_value: ~
+        - name: age
+          type: int
+          required: false
+          description: "Maximum age in days. Files older than this are candidates for removal."
+          default_value: "0"
+        - name: matches
+          type: list
+          required: false
+          description: >-
+            List of regex patterns to restrict which files are removed.
+            Patterns are matched against filename (or full path if full_path_match=True).
+            Default matches all files ('.*').
+          default_value: ~
+        - name: rmdirs
+          type: bool
+          required: false
+          description: "If True, allow removal of directories."
+          default_value: "false"
+        - name: size
+          type: int
+          required: false
+          description: "Maximum file size in bytes. Files at or above this size are removed."
+          default_value: "0"
+        - name: exclude
+          type: list
+          required: false
+          description: "List of regex patterns to exclude files from removal."
+          default_value: ~
+        - name: full_path_match
+          type: bool
+          required: false
+          description: "If True, match regex patterns against the full file path."
+          default_value: "false"
+        - name: followlinks
+          type: bool
+          required: false
+          description: "If True, descend into subdirectories pointed to by symlinks."
+          default_value: "false"
+        - name: time_comparison
+          type: string
+          required: false
+          description: >-
+            Time attribute to use when evaluating age. One of: "atime"
+            (last access), "mtime" (last modification), "ctime" (last
+            metadata change).
+          default_value: "atime"
+        - name: age_size_logical_operator
+          type: string
+          required: false
+          description: >-
+            Logical operator for combining age and size conditions.
+            "OR" (default): file is removed if either condition is met.
+            "AND": both conditions must be met.
+          default_value: "OR"
+        - name: age_size_only
+          type: string
+          required: false
+          description: >-
+            Restrict evaluation to only "age" or only "size". When set,
+            overrides age_size_logical_operator. Path matching still applies.
+          default_value: ~
+        - name: rmlinks
+          type: bool
+          required: false
+          description: "If True, allow removal of symbolic links."
+          default_value: "true"
+      examples:
+        - |
+          cleanup:
+            file.tidied:
+              - name: /tmp/salt_test
+              - rmdirs: True
+              - matches:
+                - foo
+                - b.*r
+        - |
+          cleanup_old_logs:
+            file.tidied:
+              - name: /var/log/myapp
+              - age: 30
+              - matches:
+                - '.*\.log$'
+              - time_comparison: mtime
+
+    - name: uncomment
+      description: >-
+        Uncomment specified lines in a file by removing a comment character.
+        The regex should not include the comment character itself.
+      parameters:
+        - name: name
+          type: string
+          required: true
+          description: "Absolute path of the file to edit."
+          default_value: ~
+        - name: regex
+          type: string
+          required: true
+          description: >-
+            Regular expression to find lines to uncomment. Should not include
+            the comment character. A leading ^ will be stripped for convenience.
+            The search starts from the beginning of the line, ignoring leading spaces.
+          default_value: ~
+        - name: char
+          type: string
+          required: false
+          description: "Comment character to remove from the beginning of matched lines."
+          default_value: "#"
+        - name: backup
+          type: string
+          required: false
+          description: >-
+            File extension for backup before editing. Set to False/None to skip.
+            Note: the backup is overwritten on each call.
+          default_value: ".bak"
+      examples:
+        - |
+          /etc/adduser.conf:
+            file.uncomment:
+              - regex: EXTRA_GROUPS

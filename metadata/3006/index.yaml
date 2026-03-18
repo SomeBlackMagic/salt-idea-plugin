@@ -57,6 +57,8 @@ sources:
       checksum: "sha256:bundled-docker-volume"
     - path: "states/ethtool.yaml"
       checksum: "sha256:bundled-ethtool"
+    - path: "states/cmd.yaml"
+      checksum: "sha256:bundled-cmd"
   grains:
     - path: "grains/core.yaml"
       checksum: "sha256:bundled-grains"

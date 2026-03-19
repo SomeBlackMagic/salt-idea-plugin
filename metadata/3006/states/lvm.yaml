@@ -14,6 +14,7 @@ module:
       description: >-
         Set a physical device to be used as an LVM Physical Volume.
         Initialises the device with pvcreate if not already a PV.
+        Accepts additional kwargs that are passed through to pvcreate.
       parameters:
         - name: name
           type: string
@@ -138,6 +139,20 @@ module:
           required: false
           description: "If True, use fsadm to resize the filesystem if needed. Added in 3002."
           default_value: "false"
+        - name: stripes
+          type: int
+          required: false
+          description: >-
+            Number of stripes to create in the Logical Volume. Passed through
+            to lvcreate as --stripes. See linux_lvm for details.
+          default_value: ~
+        - name: stripesize
+          type: string
+          required: false
+          description: >-
+            Size of each stripe. Passed through to lvcreate as --stripesize
+            (e.g. '4K', '8K'). See linux_lvm for details.
+          default_value: ~
       examples:
         - |
           /dev/sda:

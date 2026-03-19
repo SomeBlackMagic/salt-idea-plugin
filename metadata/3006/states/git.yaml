@@ -159,6 +159,13 @@ module:
           description: >-
             Override the refspec used for fetching tags. Default is '*'.
           default_value: "*"
+        - name: output_encoding
+          type: string
+          required: false
+          description: >-
+            Encoding to use when decoding output from git commands. Only needed
+            if repository filenames use a non-UTF-8 encoding. Added in 2018.3.1.
+          default_value: ~
       examples:
         - |
           git@github.com:user/repo.git:
@@ -234,6 +241,18 @@ module:
           required: false
           description: "HTTP Basic Auth password for HTTPS clones."
           default_value: ~
+        - name: password
+          type: string
+          required: false
+          description: "Windows only. Required when specifying user. Ignored on non-Windows."
+          default_value: ~
+        - name: output_encoding
+          type: string
+          required: false
+          description: >-
+            Encoding to use when decoding output from git commands. Only needed
+            if repository filenames use a non-UTF-8 encoding. Added in 2018.3.1.
+          default_value: ~
       examples:
         - |
           git@github.com:user/repo.git:
@@ -303,6 +322,33 @@ module:
             If True (default), fetch the remote before checking out the
             revision. Set to False to only check out a locally available rev.
           default_value: "true"
+        - name: password
+          type: string
+          required: false
+          description: "Windows only. Required when specifying user. Ignored on non-Windows. Added in 2016.3.4."
+          default_value: ~
+        - name: identity
+          type: string
+          required: false
+          description: "Path to a private key (or list of paths) for SSH authentication."
+          default_value: ~
+        - name: https_user
+          type: string
+          required: false
+          description: "HTTP Basic Auth username for HTTPS clones."
+          default_value: ~
+        - name: https_pass
+          type: string
+          required: false
+          description: "HTTP Basic Auth password for HTTPS clones."
+          default_value: ~
+        - name: output_encoding
+          type: string
+          required: false
+          description: >-
+            Encoding to use when decoding output from git commands. Only needed
+            if repository filenames use a non-UTF-8 encoding. Added in 2018.3.1.
+          default_value: ~
       examples:
         - |
           myrepo_pinned:
@@ -364,6 +410,18 @@ module:
             Set sharing permissions on git repo. See git-init(1) for details.
             Added in version 2015.5.0.
           default_value: ~
+        - name: password
+          type: string
+          required: false
+          description: "Windows only. Required when specifying user. Ignored on non-Windows. Added in 2016.3.4."
+          default_value: ~
+        - name: output_encoding
+          type: string
+          required: false
+          description: >-
+            Encoding to use when decoding output from git commands. Only needed
+            if repository filenames use a non-UTF-8 encoding. Added in 2018.3.1.
+          default_value: ~
       examples:
         - |
           /srv/git/myrepo.git:
@@ -407,6 +465,23 @@ module:
           type: string
           required: false
           description: "User under which to run git commands."
+          default_value: ~
+        - name: password
+          type: string
+          required: false
+          description: "Windows only. Required when specifying user. Ignored on non-Windows. Added in 2016.3.4."
+          default_value: ~
+        - name: global
+          type: bool
+          required: false
+          description: "If True, set a global git config option rather than a local (per-repo) one."
+          default_value: "false"
+        - name: output_encoding
+          type: string
+          required: false
+          description: >-
+            Encoding to use when decoding output from git commands. Only needed
+            if repository filenames use a non-UTF-8 encoding. Added in 2018.3.1.
           default_value: ~
       examples:
         - |
@@ -458,6 +533,31 @@ module:
           type: string
           required: false
           description: "User under which to run git commands."
+          default_value: ~
+        - name: password
+          type: string
+          required: false
+          description: "Windows only. Required when specifying user. Ignored on non-Windows. Added in 2016.3.4."
+          default_value: ~
+        - name: all
+          type: bool
+          required: false
+          description: >-
+            If True, unset all matching values. Required to unset multiple values
+            from a multivar. If False, fails when the regex matches more than one
+            value in a multivar.
+          default_value: "false"
+        - name: global
+          type: bool
+          required: false
+          description: "If True, operate on the global git config rather than a local (per-repo) one."
+          default_value: "false"
+        - name: output_encoding
+          type: string
+          required: false
+          description: >-
+            Encoding to use when decoding output from git commands. Only needed
+            if repository filenames use a non-UTF-8 encoding. Added in 2018.3.1.
           default_value: ~
       examples:
         - |

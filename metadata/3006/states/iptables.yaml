@@ -193,6 +193,61 @@ module:
             The position at which to insert the rule. Note that -1 is
             not a supported value.
           default_value: ~
+        - name: chain
+          type: string
+          required: false
+          description: "The chain to insert the rule into (e.g. 'INPUT', 'OUTPUT', 'FORWARD')."
+          default_value: ~
+        - name: jump
+          type: string
+          required: false
+          description: "The jump target (e.g. 'ACCEPT', 'DROP', 'REJECT', 'LOG')."
+          default_value: ~
+        - name: protocol
+          type: string
+          required: false
+          description: "Protocol to match (e.g. 'tcp', 'udp', 'icmp')."
+          default_value: ~
+        - name: match
+          type: string
+          required: false
+          description: "Match extension(s) to use (e.g. 'state', 'comment'). Can be a string or list."
+          default_value: ~
+        - name: connstate
+          type: string
+          required: false
+          description: "Connection state to match (used instead of '--state'). Values: 'NEW', 'ESTABLISHED', 'RELATED', 'INVALID'."
+          default_value: ~
+        - name: dport
+          type: string
+          required: false
+          description: "Destination port or port range (e.g. '80', '1025:65535')."
+          default_value: ~
+        - name: dports
+          type: list
+          required: false
+          description: "List of destination ports (uses multiport match extension)."
+          default_value: ~
+        - name: sport
+          type: string
+          required: false
+          description: "Source port or port range."
+          default_value: ~
+        - name: source
+          type: string
+          required: false
+          description: "Source address or network. Prefix with '!' or 'not ' to invert the match."
+          default_value: ~
+        - name: destination
+          type: string
+          required: false
+          description: "Destination address or network."
+          default_value: ~
+        - name: comment
+          type: string
+          required: false
+          description: "Comment string for the rule (requires comment match extension)."
+          default_value: ~
         - name: save
           type: bool
           required: false
@@ -238,6 +293,61 @@ module:
           type: int
           required: false
           description: "Position of the rule to delete."
+          default_value: ~
+        - name: chain
+          type: string
+          required: false
+          description: "The chain to delete the rule from (e.g. 'INPUT', 'OUTPUT', 'FORWARD')."
+          default_value: ~
+        - name: jump
+          type: string
+          required: false
+          description: "The jump target of the rule to delete (e.g. 'ACCEPT', 'DROP')."
+          default_value: ~
+        - name: protocol
+          type: string
+          required: false
+          description: "Protocol to match (e.g. 'tcp', 'udp', 'icmp')."
+          default_value: ~
+        - name: match
+          type: string
+          required: false
+          description: "Match extension(s) to use. Can be a string or list."
+          default_value: ~
+        - name: connstate
+          type: string
+          required: false
+          description: "Connection state to match (used instead of '--state')."
+          default_value: ~
+        - name: dport
+          type: string
+          required: false
+          description: "Destination port or port range."
+          default_value: ~
+        - name: dports
+          type: list
+          required: false
+          description: "List of destination ports (uses multiport match extension)."
+          default_value: ~
+        - name: sport
+          type: string
+          required: false
+          description: "Source port or port range."
+          default_value: ~
+        - name: source
+          type: string
+          required: false
+          description: "Source address or network."
+          default_value: ~
+        - name: destination
+          type: string
+          required: false
+          description: "Destination address or network."
+          default_value: ~
+        - name: comment
+          type: string
+          required: false
+          description: "Comment string for the rule (requires comment match extension)."
           default_value: ~
         - name: save
           type: bool

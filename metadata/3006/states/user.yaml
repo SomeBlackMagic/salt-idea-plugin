@@ -220,6 +220,29 @@ module:
             Create the user account locally, ignoring global account management
             (requires luseradd). Added in version 3007.0.
           default_value: "false"
+        - name: win_homedrive
+          type: string
+          required: false
+          description: >-
+            Windows only. The drive letter to use for the home directory
+            (e.g. 'U:'). If not specified, the home directory will be a UNC path.
+            The value must be surrounded by single quotes due to the colon.
+          default_value: ~
+        - name: win_profile
+          type: string
+          required: false
+          description: "Windows only. The custom profile directory of the user."
+          default_value: ~
+        - name: win_logonscript
+          type: string
+          required: false
+          description: "Windows only. The full path to the logon script to run when the user logs on."
+          default_value: ~
+        - name: win_description
+          type: string
+          required: false
+          description: "Windows only. A brief description of the user account."
+          default_value: ~
       examples:
         - |
           jim_nologin:

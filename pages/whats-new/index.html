@@ -86,7 +86,37 @@
 
     <section class="version" data-version="2026.2.1">
       <h2>Version 2026.2.1</h2>
-      <p><strong>top.sls</strong></p>
+        <h3>New Features</h3>
+        <ul>
+            <li><b>Top file support</b> — full validation and code completion for <code>top.sls</code> files:
+                environment structure validation, matcher key diagnostics, and SLS path resolution.</li>
+            <li><b>Matcher validation</b> — 13 matcher types are now validated in <code>top.sls</code>:
+                <code>glob</code>, <code>pcre</code>, <code>grain</code>, <code>grain_pcre</code>,
+                <code>pillar</code>, <code>pillar_exact</code>, <code>compound</code>, <code>ipcidr</code>,
+                <code>list</code>, <code>nodegroup</code>, <code>range</code>, <code>data</code>,
+                and explicit <code>match: &lt;type&gt;</code> declarations.</li>
+            <li><b>Top file completion</b> — code completion for environments, matcher types,
+                and SLS entry paths (dot-notation) based on configured file and pillar roots.</li>
+            <li><b>Quick Documentation for top files</b> — <kbd>Ctrl+Q</kbd> now provides
+                context-sensitive documentation for environments and matcher keys in <code>top.sls</code>.</li>
+            <li><b>SLS path validation</b> — dot-notation SLS paths are validated against
+                the project file tree; Jinja expressions in paths are recognized and skipped.</li>
+            <li><b>Pillar root support</b> — completions and validation in pillar <code>top.sls</code>
+                files now resolve paths against configured pillar roots.</li>
+            <li><b>What's New notifications</b> — in-IDE notifications about plugin updates
+                with an embedded "What's New" tab.</li>
+            <li><b>File type conflict handling</b> — improved detection and resolution
+                of <code>.sls</code> file type conflicts with other plugins.</li>
+            <li><b>IntelliJ Platform 2026.2 support</b> — compatible with build 262.*.</li>
+        </ul>
+
+        <h3>Bug Fixes</h3>
+        <ul>
+            <li>Fixed SLS completion for quoted YAML entries.</li>
+            <li>Fixed <code>init.sls</code> files being shown as raw paths instead of parent state names
+                in completion results.</li>
+            <li>Top files (<code>top.sls</code>) are no longer suggested as SLS entries in completions.</li>
+        </ul>
       
     </section>
     <section class="version" data-version="2026.2.0">

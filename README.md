@@ -2,6 +2,13 @@
 
 Full-featured IDE support for **SaltStack** `.sls` formula files — the YAML + Jinja2 hybrid format used for Salt states, pillars, top files, reactors, and orchestration. Works in IntelliJ IDEA, PyCharm, and all other JetBrains IDEs based on the IntelliJ Platform.
 
+## Codebase reports
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/8068eafbb1d54c7c9a4b39aa1f993aa0)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/8068eafbb1d54c7c9a4b39aa1f993aa0)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+- Covered / Coverable lines: 6k / 8k
+- Files above coverage goal: 172
+- Files below coverage goal: 105
+
 ## Features
 
 ### Smart Completion

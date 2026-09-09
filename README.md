@@ -171,7 +171,7 @@ The plugin works standalone without Jinja2 Enhanced — Jinja2-specific features
 | Feature                                                                                     | Status                 |
 |---------------------------------------------------------------------------------------------|------------------------|
 | Direct requisites: `require`, `watch`, `onchanges`, `onfail`, `prereq`, `listen`, `use`     | ✅                     |
-| Reverse forms: `require_in`, `watch_in`, `onchanges_in`, `onfail_in`, `prereq_in`, `use_in` | ⚠ `listen_in` missing |
+| Reverse forms: `require_in`, `watch_in`, `onchanges_in`, `onfail_in`, `prereq_in`, `listen_in`, `use_in` | ✅                     |
 | Alternative forms: `require_any`, `watch_any`, `onchanges_any`, `onfail_any`                | ❌                     |
 | `onfail_all` (AND-logic for onfail)                                                         | ❌                     |
 | `sls: <name>` target (require an entire SLS file)                                           | ✅ validation only     |
@@ -252,10 +252,10 @@ The plugin works standalone without Jinja2 Enhanced — Jinja2-specific features
 | SLS path validation (dot-notation, e.g. `apache.config`)                 | ✅                    |
 | Default matcher (`compound`) when `match:` is absent                     | ✅                    |
 | Scalar shorthand (`'*': common`)                                         | ❌                    |
-| Full compound matcher parsing (`G@`, `P@`, `I@`, operators, parentheses) | ❌                    |
-| Target expression syntax validation per `match:` type                    | ❌                    |
+| Full compound matcher parsing (`G@`, `P@`, `I@`, operators, parentheses) | ✅                    |
+| Target expression syntax validation per `match:` type                    | ✅                    |
 | Environment-aware SLS resolution                                         | ❌                    |
-| Separate State Top vs. Pillar Top semantics                              | ❌                    |
+| Separate State Top vs. Pillar Top semantics                              | ✅                    |
 | Pillar Top `ignore_missing: true`                                        | ❌                    |
 | Jinja environment key (`{{ saltenv }}:`)                                 | ❌                    |
 | Top file merging strategy support                                        | ⚠ documentation only |
@@ -275,7 +275,7 @@ The plugin works standalone without Jinja2 Enhanced — Jinja2-specific features
 | Pillar template variables (`__opts__`, `__grains__`, `__pillar__`)     | ❌     |
 | Full `include:` form with `defaults:` and `key:`                       | ❌     |
 | Pillar merge order and conflict diagnostics                            | ❌     |
-| Navigation from Pillar Top to Pillar SLS                               | ❌     |
+| Navigation from Pillar Top to Pillar SLS                               | ✅     |
 | Completion for `pillar.get()`, `pillar['key']`, `salt['pillar.get']()` | ❌     |
 | Multiple Pillar environments (`pillarenv`)                             | ❌     |
 
@@ -337,16 +337,16 @@ The plugin works standalone without Jinja2 Enhanced — Jinja2-specific features
 | `opts`    | Minion config                          | ✅     |
 | `pillar`  | Pillar data                            | ✅     |
 | `grains`  | Grains data                            | ✅     |
-| `saltenv` | Current environment name               | ❌     |
-| `env`     | Alias for `saltenv` (deprecated)       | ❌     |
+| `saltenv` | Current environment name               | ✅     |
+| `env`     | Alias for `saltenv` (deprecated)       | ✅     |
 
 **Jinja2 Variables Available Only in SLS Files**
 
 | Variable       | Description                                        | Status          |
 |----------------|----------------------------------------------------|-----------------|
-| `sls`          | Import path of the current SLS                     | ⚠ not verified |
-| `slspath`      | Directory path relative to file_roots              | ⚠ not verified |
-| `slsdotpath`   | `slspath` with dots instead of slashes             | ⚠ not verified |
+| `sls`          | Import path of the current SLS                     | ✅              |
+| `slspath`      | Directory path relative to file_roots              | ✅              |
+| `slsdotpath`   | `slspath` with dots instead of slashes             | ✅              |
 | `sls_path`     | `slspath` with underscores (added in Salt 3005)    | ❌              |
 | `slscolonpath` | `slspath` with colons                              | ❌              |
 | `tplpath`      | Full filesystem path                               | ❌              |
@@ -383,13 +383,13 @@ The plugin works standalone without Jinja2 Enhanced — Jinja2-specific features
 
 #### 4.3 Navigation
 
-| Feature                                           | Status       |
-|---------------------------------------------------|--------------|
-| Go to file by import path                         | ✅           |
-| Go to alias binding declaration                   | ✅           |
-| Find Usages for variables                         | ✅           |
-| Rename refactoring for variables                  | ✅           |
-| Ctrl+Click inside `{% if %}` blocks (import path) | ❌ known bug |
+| Feature                                           | Status |
+|---------------------------------------------------|--------|
+| Go to file by import path                         | ✅     |
+| Go to alias binding declaration                   | ✅     |
+| Find Usages for variables                         | ✅     |
+| Rename refactoring for variables                  | ✅     |
+| Ctrl+Click inside `{% if %}` blocks (import path) | ✅     |
 
 #### 4.4 References
 
@@ -412,7 +412,7 @@ The plugin works standalone without Jinja2 Enhanced — Jinja2-specific features
 
 | Feature                               | Status                       |
 |---------------------------------------|------------------------------|
-| Inline hints for imported data blocks | ⚠ known bug with stale data |
+| Inline hints for imported data blocks | ✅ |
 
 #### 4.7 Inspection
 
@@ -432,13 +432,13 @@ The plugin works standalone without Jinja2 Enhanced — Jinja2-specific features
 
 ### 5. Metadata
 
-| Feature                                                 | Status |
-|---------------------------------------------------------|--------|
-| Data models (Module, Function, Param, Requisite, Grain) | ✅     |
-| JSON metadata parsing                                   | ✅     |
-| Metadata service and cache                              | ✅     |
-| Bundled metadata files (states, requisites)             | ✅     |
-| Metadata loader (dedicated class)                       | ❌     |
+| Feature                                                 | Status                                 |
+|---------------------------------------------------------|----------------------------------------|
+| Data models (Module, Function, Param, Requisite, Grain) | ✅                                     |
+| JSON metadata parsing                                   | ✅                                     |
+| Metadata service and cache                              | ✅                                     |
+| Bundled metadata files (states, requisites)             | ✅                                     |
+| Metadata loader (dedicated class)                       | ✅ distributed across registry/parsers |
 
 ---
 
@@ -459,13 +459,13 @@ The plugin works standalone without Jinja2 Enhanced — Jinja2-specific features
 
 ### 7. Known Issues
 
-| Issue                                                          | Priority |
-|----------------------------------------------------------------|----------|
-| Go to Declaration inside `{% if %}` blocks returns null        | High     |
-| Inlay hint provider may show stale data                        | High     |
-| Find Usages handler may read PSI without proper locking        | High     |
-| `import_yaml` path inside `{% if %}` not resolved              | Medium   |
-| `DuplicateIdValidator` intentionally disabled pending redesign | Medium   |
+| Issue                                                          | Priority   |
+|----------------------------------------------------------------|------------|
+| ~~Go to Declaration inside `{% if %}` blocks returns null~~    | High       |
+| ~~Inlay hint provider may show stale data~~                    | ~~High~~   |
+| Find Usages handler may read PSI without proper locking        | High       |
+| ~~`import_yaml` path inside `{% if %}` not resolved~~          | ~~Medium~~ |
+| `DuplicateIdValidator` intentionally disabled pending redesign | Medium     |
 
 ---
 
@@ -473,16 +473,16 @@ The plugin works standalone without Jinja2 Enhanced — Jinja2-specific features
 
 **Critical (unblocks other work)**
 
-1. Fix Go to Declaration inside `{% if %}` blocks
-2. Fix stale PSI in inlay hint provider
+1. ~~Fix Go to Declaration inside `{% if %}` blocks~~
+2. ~~Fix stale PSI in inlay hint provider~~
 
 **Quick wins (small effort, high value)**
 
-3. Add `listen_in` to reverse requisites
+3. ~~Add `listen_in` to reverse requisites~~
 4. Add `onfail_all` constant, completion, and documentation
 5. Add missing global args validation: `umask`, `parallel`, `reload_modules`, `reload_pillar`, `reload_grains`, `fire_event`, `saltenv`
-6. Sync global args list between completion and validation
-7. Add missing Jinja2 SLS variables: `saltenv`, `env`, `sls_path`, `slscolonpath`, `tplfile`, `tpldir`, `tpldot`
+6. ~~Sync global args list between completion and validation~~
+7. Add missing Jinja2 SLS variables: ~~`saltenv`, `env`,~~ `sls_path`, `slscolonpath`, `tplfile`, `tpldir`, `tpldot`
 
 **Functional minimum**
 
@@ -490,14 +490,14 @@ The plugin works standalone without Jinja2 Enhanced — Jinja2-specific features
 9. Add `*_any` requisite completion (`require_any`, `watch_any`, etc.)
 10. Support wildcards in requisites (`*`, `?`, `[]`)
 11. Pillar `include:` options — `defaults:`, `key:`, relative and env-specific includes
-12. Top domain — full matcher validation for all 13 types
+12. ~~Top domain — full matcher validation for all 13 types~~
 13. Pillar domain — key validation, structure validation, key references
 14. Reactor — event tag patterns, reaction types, `{{ data }}` access
 
 **New functionality**
 
-15. Pillar Top — navigation to Pillar SLS, `ignore_missing`, separate pillar root semantics
-16. `import_yaml` path resolution via `pillar_roots`
+15. Pillar Top — ~~navigation to Pillar SLS,~~ `ignore_missing` ~~, separate pillar root semantics~~
+16. ~~`import_yaml` path resolution via `pillar_roots`~~
 17. Include preview — preview of included file content
 18. Orchestrate — `salt.state`, `salt.function`, `salt.runner`, `salt.wheel` completion and validation
 19. Mine — `mine.get()` completion, `mine_functions:` navigation
@@ -508,9 +508,9 @@ The plugin works standalone without Jinja2 Enhanced — Jinja2-specific features
 24. State High Data — full and short declaration forms, `name`, `names`, multiple declarations per ID
 25. Cross-file state tree — ID uniqueness after `include`, circular requisites, dependency graph
 26. Global state argument type schemas — `onlyif`, `unless`, `creates`, `order`, `retry`, `fire_event`, `umask`
-27. Top shorthand and default matcher — scalar shorthand, correct default `compound`
-28. Compound matcher parser — all matcher prefixes, operators, and parentheses
-29. State Top / Pillar Top — separate context, roots, and environment-aware resolution
+27. Top shorthand and default matcher — scalar shorthand ~~, correct default `compound`~~
+28. ~~Compound matcher parser — all matcher prefixes, operators, and parentheses~~
+29. ~~State Top / Pillar Top — separate context, roots, and environment-aware resolution~~
 30. Pillar include — full form with `defaults` and `key`
 31. Pillar merge model — order, recursive dictionary merge, conflict diagnostics
 32. Pillar key references — completion and navigation for `pillar.get`, `pillar['key']`, `salt['pillar.get']`
@@ -518,8 +518,8 @@ The plugin works standalone without Jinja2 Enhanced — Jinja2-specific features
 34. Orchestrate navigation — references from `sls`, `top`, and `name` to targets
 35. Reactor schemas — unified `args`, legacy `arg`/`kwarg`, reaction types
 36. Reactor Jinja2 context — `tag`, `data`, `salt` and restriction of unavailable constructs
-37. Salt Jinja2 tags — `load_*`, `import_*`, `profile`, and `with context`
-38. Salt Jinja2 API — `ifelse`, filter/test catalog, `salt['module.function']` signatures
+37. Salt Jinja2 tags — ~~`load_*`, `import_*`,~~ `profile`, and `with context`
+38. Salt Jinja2 API — `ifelse`, ~~filter/test catalog,~~ `salt['module.function']` signatures
 
 ## License
 

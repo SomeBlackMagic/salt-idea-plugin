@@ -85,7 +85,7 @@
     </div>
 
     <section class="version" data-version="2026.2.1">
-      <h2>Version 2026.2.1</h2>
+        <h2>Version 2026.2.1</h2>
         <h3>New Features</h3>
         <ul>
             <li><b>Top file support</b> — full validation and code completion for <code>top.sls</code> files:
@@ -117,12 +117,25 @@
                 in completion results.</li>
             <li>Top files (<code>top.sls</code>) are no longer suggested as SLS entries in completions.</li>
         </ul>
-      
+
     </section>
     <section class="version" data-version="2026.2.0">
-      <h2>Version 2026.2.0</h2>
-      <p><strong> test </strong></p>
-      
+        <h2>Version 2026.2.0</h2>
+        <h3>New Features</h3>
+        <ul>
+            <li><b>Enhanced Jinja highlighting in Salt files</b> — YAML syntax highlighting now works
+                correctly across embedded Jinja fragments, preserving proper colors and code insight
+                for both YAML and Jinja regions.</li>
+            <li><b>Automatic Jinja2 support for <code>.sls</code> files</b> — the <code>.sls</code>
+                extension is now automatically registered for Jinja2 support when a project is opened,
+                eliminating the need for manual configuration.</li>
+            <li><b>IntelliJ Platform 2026.2 support</b> — compatible with build 262.*.</li>
+        </ul>
+
+        <h3>Improvements</h3>
+        <ul>
+            <li>Improved error reporting with better crash diagnostics.</li>
+        </ul>
     </section>
 
     <!-- ===================== -->
@@ -163,20 +176,51 @@
             document.body.classList.add('dark');
         }
 
-        // show version
+        // show version and all earlier versions in the same minor series
         const blocks = document.querySelectorAll('.version');
         let shown = false;
 
-        blocks.forEach(block => {
-            if (block.dataset.version === version) {
+        // parse "2026.2.1" → prefix "2026.2.", patch 1
+        const parts = version.match(/^(.+\.)(\d+)$/);
+        if (parts) {
+            const prefix = parts[1];          // "2026.2."
+            const patch = parseInt(parts[2]); // 1
+
+            // collect all blocks in the same minor series with patch <= requested
+            const matching = [];
+            blocks.forEach(block => {
+                const v = block.dataset.version;
+                if (v.startsWith(prefix)) {
+                    const p = parseInt(v.substring(prefix.length));
+                    if (!isNaN(p) && p <= patch) {
+                        matching.push({ block, patch: p });
+                    }
+                }
+            });
+
+            // sort descending by patch and show
+            matching.sort((a, b) => b.patch - a.patch);
+            matching.forEach(({ block }) => {
                 block.style.display = 'block';
                 shown = true;
-                block.scrollIntoView({ block: 'start' });
+            });
+
+            if (matching.length > 0) {
+                matching[0].block.scrollIntoView({ block: 'start' });
             }
-        });
+        } else {
+            // exact match for non-semver versions (e.g. "latest")
+            blocks.forEach(block => {
+                if (block.dataset.version === version) {
+                    block.style.display = 'block';
+                    shown = true;
+                }
+            });
+        }
 
         if (!shown) {
-            document.querySelector('[data-version="latest"]').style.display = 'block';
+            const fallback = document.querySelector('[data-version="latest"]');
+            if (fallback) fallback.style.display = 'block';
         }
 
         document.getElementById('currentVersion').textContent = version;

@@ -84,6 +84,59 @@
         Theme: <code id="currentTheme">unknown</code>
     </div>
 
+    <section class="version" data-version="2026.2.2">
+        <h2>Version 2026.2.2</h2>
+        <h3>New Features</h3>
+        <ul>
+            <li><b>Requisite cycle detection</b> — states are now checked for circular
+                dependencies between <code>require</code>, <code>watch</code>, and other
+                requisites, correctly distinguishing states with the same ID that live
+                in different modules.</li>
+            <li><b>Duplicate state ID detection</b> — duplicate state IDs are flagged
+                both within a single SLS file and across the whole project, with
+                Jinja-generated IDs and IDs used only via <code>extend</code> correctly excluded.</li>
+            <li><b>Argument type validation</b> — state function arguments are checked
+                against their expected type (<code>string</code>, <code>list</code>,
+                <code>mapping</code>, <code>boolean</code>, <code>integer</code>, <code>number</code>),
+                catching type mistakes before they reach Salt.</li>
+            <li><b>State declaration validation</b> — flags malformed state declarations,
+                such as an invalid number of functions or duplicate modules within a single state.</li>
+            <li><b><code>listen_in</code> requisite</b> — full completion, structural validation,
+                and <kbd>Ctrl+Q</kbd> quick documentation support.</li>
+            <li><b><code>onfail_all</code> requisite</b> — completion, structural validation,
+                and quick documentation explaining its AND-logic semantics.</li>
+            <li><b><code>*_any</code> requisites</b> — completion and structural validation
+                for <code>require_any</code>, <code>watch_any</code>, <code>onchanges_any</code>,
+                and <code>onfail_any</code>.</li>
+            <li><b>Bare state ID requisites</b> — bare state IDs used in <code>require</code>,
+                <code>require_any</code>, and related requisites are now recognized, validated,
+                and offered in completion.</li>
+            <li><b>Wildcard requisites</b> — wildcard patterns (<code>*</code>, <code>?</code>,
+                <code>[ ]</code>) in <code>pkg</code>, <code>file</code>, and <code>service</code>
+                requisites are recognized, avoiding false "unresolved ID" warnings.</li>
+            <li><b>Stricter requisite value checks</b> — <code>require_any</code>,
+                <code>require_in</code>, and other alternative/reverse requisites now report
+                an error when given a scalar value instead of a list.</li>
+            <li><b>Expanded global arguments</b> — completion and validation for all global
+                state arguments, including <code>umask</code>, <code>parallel</code>,
+                <code>reload_modules</code>, <code>reload_pillar</code>, <code>reload_grains</code>,
+                <code>fire_event</code>, <code>cmd_opts_exclude</code>, and <code>saltenv</code>,
+                plus refined checks for <code>onlyif</code>/<code>unless</code>, <code>retry</code>,
+                and <code>order: first</code>.</li>
+            <li><b>Smarter Jinja handling</b> — includes, requisites, and <code>salt://</code>
+                references no longer report false warnings for Jinja-templated content.</li>
+            <li><b>Crash reporting</b> — the plugin can now submit anonymous error reports
+                directly to the developers, helping fix issues faster.</li>
+        </ul>
+
+        <h3>Bug Fixes</h3>
+        <ul>
+            <li>Fixed the IDE freezing for up to 17 seconds when metadata settings were loaded
+                from a slow or unresponsive remote server; the status is now refreshed asynchronously.</li>
+        </ul>
+
+    </section>
+
     <section class="version" data-version="2026.2.1">
         <h2>Version 2026.2.1</h2>
         <h3>New Features</h3>
@@ -119,6 +172,7 @@
         </ul>
 
     </section>
+
     <section class="version" data-version="2026.2.0">
         <h2>Version 2026.2.0</h2>
         <h3>New Features</h3>
